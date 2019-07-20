@@ -1,4 +1,4 @@
-![Alt Text](https://i.imgur.com/2YLpRaP.gif)
+<img src="https://i.imgur.com/2YLpRaP.gif" width="40" height="40"
 
 Quake Report App
 ===================================
