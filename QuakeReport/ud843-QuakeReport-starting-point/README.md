@@ -1,4 +1,4 @@
-<img src="https://i.imgur.com/2YLpRaP.gif" width="400" height="400" />
+![Alt Text](https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif)
 
 Quake Report App
 ===================================
