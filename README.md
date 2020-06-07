@@ -1,6 +1,6 @@
 # Android
-Here I'll publish android apps I developed.
+currently contains one simple client-server app.
 
-* Some apps will be developed using the help and guidness given by the Udacity android development course. *
+
 
 
