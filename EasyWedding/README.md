@@ -37,6 +37,9 @@ EasyWedding is an app that helps couples who are getting married to organize the
    - CRUD operations of a guests.
    - Confirmations managment.
    - Using Contacts Content Provider to make it easy for user to manage guests.
+   
+### Database
+ - Firebase Realtime Database 
      
 License
 ----
