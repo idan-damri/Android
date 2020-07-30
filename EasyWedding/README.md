@@ -24,6 +24,7 @@ EasyWedding is an app that helps couples who are getting married to organize the
 ### Todos
 - ##### Chat
    - Message confirmation.
+   - Indication of when a user joins the chat or leaves the chat.
    - Sound feedback to actions.
    - Quotation.
    - Invite to chat using Dynamic Links
