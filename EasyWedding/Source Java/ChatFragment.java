@@ -604,30 +604,38 @@ public class ChatFragment extends Fragment {
         //atomicDecrementUsersCount();
 
 
-        mSendMessageButton.setEnabled(false);
-        mMessageEditText.setText("");
-        mMessageEditText.setEnabled(false);
-        // Clear chatID locally and also in the db.
-        mChatId = null;
+        // Clear chatID in the db
         mUserChatIdentifier.removeValue(new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(@Nullable DatabaseError error, @NonNull DatabaseReference ref) {
                 if (error == null) {
                     Toast.makeText(getActivity(), R.string.yout_left_chat, Toast.LENGTH_SHORT).show();
+
+                    // Stop listening to messages in the hat since the user left the chat.
+                    if (mAdapter != null) {
+                        mAdapter.stopListening();
+                        mAdapter = null;
+                    }
+
+                    mSendMessageButton.setEnabled(false);
+                    mMessageEditText.setEnabled(false);
+                    mMessageEditText.setText("");
+
+                    // Clear chatID locally
+                    mChatId = null;
+
+
                     // User now don't have a chat so listen to when the user will have a new chat.
                     if (mUserChatIdentifierListener == null) {
                         mUserChatIdentifierListener = setUserChatIdentifierListener();
                         mUserChatIdentifier.addValueEventListener(mUserChatIdentifierListener);
-
                     }
-                    // stop listening to messages in the hat since the user left the chat.
-                    if (mAdapter != null)
-                        mAdapter.stopListening();
-
                 }
-                else
+                else {
                     Log.e(TAG, "Error occurred while trying to leave the chat " + error.toException());
-            }
+                    Toast.makeText(getActivity(), R.string.error_leave_chat, Toast.LENGTH_LONG).show();
+                }
+                }
         });
 
 
