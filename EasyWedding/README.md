@@ -19,6 +19,7 @@ EasyWedding is an app that helps couples who are getting married to organize the
     - Open a chat and invites others to join.
     - Supported languages are English and Hebrew.
     - Support in Url, Phone Number and Email parsing.
+    
     ***Note: A user can be only in one chat.***
 
 ### Todos
