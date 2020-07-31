@@ -10,7 +10,7 @@ public class Constants {
     public static final String PATH_INVITES_ALLOWED = "invitesAllowed";
     public static final String PATH_CHAT_USERS_COUNT = "usersCount";
     public static final int NEW_CHAT_USERS_COUNT = 1;
-    /** Indicates that a {@link com.example.easywedding.model.User} don't have an open chat */
+    /** Indicates that a {@link com.example.easywedding.model.User} don't have a chat */
     public static final String EMPTY_CHAT = "";
 
 
