@@ -271,7 +271,7 @@ public class AddFeatureActivity extends AppCompatActivity {
     /**
      * TextWatcher for the feature name, supplier name and supplier email
      */
-    private static class FeatureTextWatcher implements TextWatcher{
+    private class FeatureTextWatcher implements TextWatcher{
 
         private TextInputLayout mTextInputLayout;
 
