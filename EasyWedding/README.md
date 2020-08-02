@@ -37,8 +37,6 @@ EasyWedding is an Android app that helps couples who are getting married to orga
    - Invite to chat using Dynamic Links
    - Send photos.
 - ##### Features
-   - List of wedding features.
-   - CRUD operations on a feature.
    - Sorting and Deleting features by a given supplier.
    - Manage payments to suppliers.
 - ##### Guests
