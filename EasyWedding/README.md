@@ -22,7 +22,7 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 ### Features
   - Firebase AuthUI sign-in flow.
   - Multi-User Chat , for wedding content only.
-    - Open a chat and invites others to join.
+    - Open a chat and invite others to join.
     - Supported languages are English and Hebrew.
     - Support in Url, Phone Number and Email parsing.
     
