@@ -1,24 +1,28 @@
 # EasyWedding
 
-EasyWedding is an app that helps couples who are getting married to organize their wedding.
+EasyWedding is an Android app that helps couples who are getting married to organize their wedding.
 
 ***Build is in progress.***
 
 ### Demos
-##### AuthUI sign-in flow
-![AuthUI sign-in flow](demo/0_AuthUI.gif)
-##### New User opens a chat
-![AuthUI sign-in flow](demo/1_Chat.gif)
-##### User get an invite to a chat
-![User get an invite to a chat](demo/2_Chat_Invite.gif)
+##### Add a new feature
+![Add a new feature](demo/4_add_a_feature.gif)
 ##### Robust feature form
 ![Robust feature form](demo/3_robust_feature_form.gif)
+##### User get an invite to a chat
+![User get an invite to a chat](demo/2_Chat_Invite.gif)
+##### New User opens a chat
+![AuthUI sign-in flow](demo/1_Chat.gif)
+##### AuthUI sign-in flow
+![AuthUI sign-in flow](demo/0_AuthUI.gif)
+
+
 
 
 ### Features
   - Firebase AuthUI sign-in flow.
   - Multi-User Chat , for wedding content only.
-    - Open a chat and invites others to join.
+    - Open a chat and invite others to join.
     - Supported languages are English and Hebrew.
     - Support in Url, Phone Number and Email parsing.
     
@@ -33,8 +37,6 @@ EasyWedding is an app that helps couples who are getting married to organize the
    - Invite to chat using Dynamic Links
    - Send photos.
 - ##### Features
-   - List of wedding features.
-   - CRUD operations on a feature.
    - Sorting and Deleting features by a given supplier.
    - Manage payments to suppliers.
 - ##### Guests
