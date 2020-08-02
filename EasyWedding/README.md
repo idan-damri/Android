@@ -1,6 +1,6 @@
 # EasyWedding
 
-EasyWedding is an app that helps couples who are getting married to organize their wedding.
+EasyWedding is an Android app that helps couples who are getting married to organize their wedding.
 
 ***Build is in progress.***
 
