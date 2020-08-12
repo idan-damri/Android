@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.example.easywedding.Utils.Utils;
 import com.example.easywedding.model.Message;
 import com.example.easywedding.model.User;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
@@ -285,7 +286,7 @@ public class ChatFragment extends Fragment {
         // Get a reference to the user's chat.
         mUserGroupChatReference = mChatsReference.child(mChatId);
 
-        FirebaseRecyclerOptions options = new FirebaseRecyclerOptions.Builder<Message>()
+        FirebaseRecyclerOptions<Message> options = new FirebaseRecyclerOptions.Builder<Message>()
                 .setQuery(mUserGroupChatReference, Message.class)
                 .build();
 
@@ -329,8 +330,7 @@ public class ChatFragment extends Fragment {
             public MessageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 // The ViewHolder will keep references to the views in the list item view.
                 View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_item_chat, parent, false);
-                MessageViewHolder messageViewHolder = new MessageViewHolder(view);
-                return messageViewHolder;
+                return new MessageViewHolder(view);
             }
 
         };
@@ -494,12 +494,12 @@ public class ChatFragment extends Fragment {
         emailInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+                inputLayout.setError("");
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                inputLayout.setError("");
+
             }
 
             @Override
@@ -529,7 +529,7 @@ public class ChatFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 // If the email is valid then add the user to the chat.
-                if (isValidEmail(emailInput.getText())) {
+                if (Utils.isValidEmail(emailInput.getText())) {
                     addUserToChatByEmail(emailInput.getText().toString());
                     dialog.dismiss();
                     // Else show an error message and don't dismiss the dialog.
@@ -905,13 +905,6 @@ public class ChatFragment extends Fragment {
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(DEFAULT_MSG_LENGTH_LIMIT)});
     }
 
-    /**
-     * @param email a string the user entered
-     * @return true if the string is a valid email
-     */
-    private boolean isValidEmail(CharSequence email) {
-        return !TextUtils.isEmpty(email) && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
-    }
 
 
 }
