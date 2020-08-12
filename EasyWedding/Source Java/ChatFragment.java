@@ -450,7 +450,7 @@ public class ChatFragment extends Fragment {
 
         switch (item.getItemId()) {
             case R.id.action_leave_chat:
-                // Create an a UI that the user can interact with for leaving the chat
+                // Create a UI that the user can interact with for leaving the chat
                 createLeaveChatDialog();
                 return true;
             case R.id.action_open_chat:
