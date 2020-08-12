@@ -13,7 +13,11 @@
         app:showAsAction="never"
         android:orderInCategory="@integer/action_invite_order"/>
 
-
+    <item
+        android:id="@+id/action_settings"
+        android:title="@string/action_settings"
+        app:showAsAction="never"
+        android:orderInCategory="@integer/action_settings"/>
 
     <item
         android:id="@+id/action_leave_chat"

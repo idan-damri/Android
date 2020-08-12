@@ -7,26 +7,20 @@
     tools:context=".GuestsFragment">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerview_features"
+        android:id="@+id/recyclerview_guests"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="// TODO"
-        android:textSize="48sp"
-        android:layout_gravity="center"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_features"
+        android:id="@+id/fab_guests"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         app:fabSize="auto"
         android:src="@drawable/guests_fab_drawable"
-        android:contentDescription="@string/features_fab_content_description"
+        android:contentDescription="@string/guests_fab_content_description"
         />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
