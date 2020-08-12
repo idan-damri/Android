@@ -8,7 +8,9 @@ import com.google.firebase.database.Exclude;
 public class Feature implements Parcelable {
 
     private String name;
-    private String supplierId;
+    private String supplierName;
+    private String supplierPhone;
+    private String supplierEmail;
     private String advancePayment;
     private String paymentBalance;
     private String freeText;
@@ -17,18 +19,26 @@ public class Feature implements Parcelable {
     public Feature(){
 
     }
-    public Feature(String name, String supplierId, String freeText
-                   ,String advancePayment, String paymentBalance, String quantity) {
+    public Feature(String name, String freeText, String advancePayment
+            , String paymentBalance, String quantity
+            , String supplierName, String supplierEmail
+            , String supplierPhone ) {
         this.name = name;
-        this.supplierId = supplierId;
+        this.supplierName = supplierName;
+        this.supplierEmail = supplierEmail;
+        this.supplierPhone = supplierPhone;
         this.freeText = freeText;
         this.advancePayment = advancePayment;
         this.paymentBalance = paymentBalance;
         this.quantity = quantity;
     }
+
+
     protected Feature(Parcel in) {
         name = in.readString();
-        supplierId = in.readString();
+        supplierName = in.readString();
+        supplierPhone = in.readString();
+        supplierEmail = in.readString();
         advancePayment = in.readString();
         paymentBalance = in.readString();
         freeText = in.readString();
@@ -38,7 +48,9 @@ public class Feature implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(name);
-        dest.writeString(supplierId);
+        dest.writeString(supplierName);
+        dest.writeString(supplierPhone);
+        dest.writeString(supplierEmail);
         dest.writeString(advancePayment);
         dest.writeString(paymentBalance);
         dest.writeString(freeText);
@@ -62,6 +74,30 @@ public class Feature implements Parcelable {
         }
     };
 
+    public String getSupplierName() {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
+    }
+
+    public String getSupplierPhone() {
+        return supplierPhone;
+    }
+
+    public void setSupplierPhone(String supplierPhone) {
+        this.supplierPhone = supplierPhone;
+    }
+
+    public String getSupplierEmail() {
+        return supplierEmail;
+    }
+
+    public void setSupplierEmail(String supplierEmail) {
+        this.supplierEmail = supplierEmail;
+    }
+
     public String getName() {
         return name;
     }
@@ -70,17 +106,11 @@ public class Feature implements Parcelable {
         return quantity;
     }
 
-    public String getSupplierId() {
-        return supplierId;
-    }
 
     public void setQuantity(String quantity) {
         this.quantity = quantity;
     }
 
-    public void setSupplierId(String supplierId) {
-        this.supplierId = supplierId;
-    }
 
     public String getFreeText() {
         return freeText;
