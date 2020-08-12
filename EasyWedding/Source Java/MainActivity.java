@@ -5,13 +5,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.viewpager2.widget.ViewPager2;
 
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,16 +39,13 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     //fields for view pager and tabs
     private ViewPager2 mViewPager2;
-    private ViewPagerFragmentAdapter mAdapter;
     private TabLayout mTabLayout;
+    ViewPagerFragmentAdapter mAdapter; // Package access
+    // true if the fragments that are bound to the view pagers are cleared
+    // false otherwise.
     private boolean isDataCleared;
 
-
-   // public static final String[] fragmentsTags = {ChatFragment.TAG, FeaturesFragment.T}
-
-
-
-    private static final String TAG = MainActivity.class.getSimpleName();
+    public static final String TAG = MainActivity.class.getSimpleName();
 
     /*fragments constants*/
     public static final int FRAGMENTS_COUNT = 3;
@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     /*firebase constants*/
     //sign-in flow request code
     private static final int RC_SIGN_IN = 1;
+
 
     private DatabaseReference mRootReference;
     private FirebaseAuth mFirebaseAuth;

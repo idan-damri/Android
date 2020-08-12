@@ -9,11 +9,9 @@ import androidx.core.os.ConfigurationCompat;
 import android.content.Intent;
 import android.os.Bundle;
 
-import android.os.Parcelable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,13 +22,10 @@ import android.widget.Toast;
 import com.example.easywedding.Utils.Utils;
 
 import com.example.easywedding.model.Feature;
-import com.example.easywedding.model.Supplier;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-
-import org.w3c.dom.Text;
 
 import java.math.BigDecimal;
 
@@ -39,8 +34,6 @@ import java.text.ParseException;
 import java.util.Currency;
 
 import java.util.Locale;
-import java.text.DecimalFormat;
-import java.text.ParseException;
 
 
 public class AddFeatureActivity extends AppCompatActivity {
@@ -48,7 +41,7 @@ public class AddFeatureActivity extends AppCompatActivity {
     private TextInputLayout mLayoutFeatureName;
     private TextInputLayout mLayoutPaymentBalance;
     private TextInputLayout mLayoutAdvancePayment;
-    private TextInputLayout mLayoutEmail;
+    private TextInputLayout mLayoutSupplierEmail;
     private TextInputLayout mLayoutSupplierName;
     private TextInputLayout mLayoutSupplierPhone;
     private TextInputLayout mLayoutQuantity;
@@ -60,19 +53,19 @@ public class AddFeatureActivity extends AppCompatActivity {
     private EditText mQuantityEditText;
     private EditText mFreeTextEditText;
     private EditText mFeatureNameEditText;
-    private EditText mEmailEditText;
     private EditText mPaymentBalanceEditText;
     private EditText mAdvancePaymentEditText;
     // For the currency of the advance payment and payment balance
     private Locale mLocal;
     private String mCurrencySymbol;
+    private Intent mIntent;
     // For handling focus and soft keyboard events
     // when we start finish the activity.
     private LinearLayout mDummyLayout;
     // db
-    private DatabaseReference mRootReference;
+    private DatabaseReference mRootRef;
     private FirebaseAuth mFirebaseAuth;
-
+    // Starting index to fetch the payments fields values (without the currency symbol).
     private final static int SKIPPED_CURRENCY_SYMBOL_INDEX = 1;
 
 
@@ -81,7 +74,7 @@ public class AddFeatureActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
 
-        Intent intent = getIntent();
+        mIntent = getIntent();
 
         // Enable the up button.
         ActionBar ab = getSupportActionBar();
@@ -92,18 +85,21 @@ public class AddFeatureActivity extends AppCompatActivity {
         setFields();
 
         handleLocaleSensitiveInputFields();
-
-        if (isAddingNewFeature(intent))
+        // If the user is adding a new feature (not editing existing one)
+        // then set the title accordingly.
+        if (!mIntent.hasExtra(FeaturesFragment.EXTRA_FEATURE)) {
             setTitle(R.string.title_add_feature);
-        else
-            setForEditExistingFeature(intent);
+            // Else the user is editing an existing feature, so prepare
+            // the feature data and set the title to the feature's name.
+        } else {
+            setForEditExistingFeature(mIntent);
+        }
 
         setTextWatchers();
 
         takeFocusFromInputFields();
 
         setEndIconsInvisibleOnStartup();
-
 
 
     }
@@ -113,53 +109,41 @@ public class AddFeatureActivity extends AppCompatActivity {
         mLayoutAdvancePayment.setEndIconVisible(false);
         mLayoutSupplierPhone.setEndIconVisible(false);
         mLayoutSupplierName.setEndIconVisible(false);
-        mLayoutEmail.setEndIconVisible(false);
+        mLayoutSupplierEmail.setEndIconVisible(false);
         mLayoutQuantity.setEndIconVisible(false);
         mLayoutFreeText.setEndIconVisible(false);
     }
 
     /**
      * The user is editing an existing feature so set the input fields with the relevant information.
+     *
      * @param intent the intent we got from FeaturesFragment.
      */
     private void setForEditExistingFeature(Intent intent) {
-            Feature feature = (Feature) intent.getParcelableExtra(FeaturesFragment.EXTRA_FEATURE);
+        Feature feature = (Feature) intent.getParcelableExtra(FeaturesFragment.EXTRA_FEATURE);
+        if (feature != null) {
             setTitle(feature.getName());
             mFeatureNameEditText.setText(feature.getName());
             mQuantityEditText.setText(feature.getQuantity());
             mFreeTextEditText.setText(feature.getFreeText());
+            mSupplierNameEditText.setText(feature.getSupplierName());
+            mSupplierEmailEditText.setText(feature.getSupplierEmail());
+            mSupplierPhoneEditText.setText(feature.getSupplierPhone());
+            // Don't output the locale currency symbol (since TextInputLayout will do this.
             if (!TextUtils.isEmpty(feature.getPaymentBalance()))
-            mPaymentBalanceEditText.setText(feature.getPaymentBalance().substring(SKIPPED_CURRENCY_SYMBOL_INDEX));
+                mPaymentBalanceEditText.setText(feature.getPaymentBalance().substring(SKIPPED_CURRENCY_SYMBOL_INDEX));
             if (!TextUtils.isEmpty(feature.getAdvancePayment()))
                 mAdvancePaymentEditText.setText(feature.getAdvancePayment().substring(SKIPPED_CURRENCY_SYMBOL_INDEX));
 
-            if (intent.hasExtra(FeaturesFragment.EXTRA_SUPPLIER)) {
-                Supplier supplier = (Supplier) intent.getParcelableExtra(FeaturesFragment.EXTRA_SUPPLIER);
-                mSupplierNameEditText.setText(supplier.getSupplierName());
-                mSupplierEmailEditText.setText(supplier.getSupplierEmail());
-                mSupplierPhoneEditText.setText(supplier.getSupplierPhoneNumber());
-            }
         }
 
-
-    /**
-     *
-     * @param intent the intent we got from FeaturesFragment
-     * @return true if the user is adding a new feature, false otherwise.
-     */
-    private boolean isAddingNewFeature(Intent intent) {
-        // If the user is adding a new feature then we didn't put this extras
-        // in FeaturesFragment. We checked only for the name of the feature and
-        // not also for the supplier name since you can't save a a feature
-        // that have a supplier name but don't have a feature name.
-        return !intent.hasExtra(FeaturesFragment.EXTRA_FEATURE);
     }
 
 
     private void setTextWatchers() {
-        mFeatureNameEditText.addTextChangedListener(new FeatureTextWatcher(mLayoutFeatureName));
-        mEmailEditText.addTextChangedListener(new FeatureTextWatcher(mLayoutEmail));
-        mSupplierNameEditText.addTextChangedListener(new FeatureTextWatcher(mLayoutSupplierName));
+        mFeatureNameEditText.addTextChangedListener(new CustomTextWatcher(mLayoutFeatureName));
+        mSupplierEmailEditText.addTextChangedListener(new CustomTextWatcher(mLayoutSupplierEmail));
+        mSupplierNameEditText.addTextChangedListener(new CustomTextWatcher(mLayoutSupplierName));
         mPaymentBalanceEditText.addTextChangedListener(new NumberTextWatcher(mPaymentBalanceEditText));
         mAdvancePaymentEditText.addTextChangedListener(new NumberTextWatcher(mAdvancePaymentEditText));
     }
@@ -172,6 +156,9 @@ public class AddFeatureActivity extends AppCompatActivity {
     }
 
     /**
+     * handle the case where the user's layout is RTL
+     * and there exists input fields that force the user must write from left to right.
+     * For example, phone number and email input field.
      *
      */
     private void handleLocaleSensitiveInputFields() {
@@ -185,8 +172,10 @@ public class AddFeatureActivity extends AppCompatActivity {
             mLayoutPaymentBalance.setSuffixText(" " + mCurrencySymbol);
             mLayoutAdvancePayment.setSuffixText(" " + mCurrencySymbol);
             // start writing the phone number from the right (in a RTL layout)
+            // I guess android change this automatically to LTR so the alignment of the text
+            // is to the end, which is the start of the RTL layout
             mSupplierPhoneEditText.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
-            mSupplierEmailEditText.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+
         } else {
             mLayoutPaymentBalance.setPrefixText(" " + mCurrencySymbol);
             mLayoutAdvancePayment.setPrefixText(" " + mCurrencySymbol);
@@ -198,8 +187,8 @@ public class AddFeatureActivity extends AppCompatActivity {
     private void setFields() {
         mLayoutFeatureName = findViewById(R.id.text_layout_feature_name);
         mLayoutSupplierName = findViewById(R.id.text_layout_supplier_name);
-        mLayoutEmail = findViewById(R.id.text_layout_email);
-        mSupplierEmailEditText = mLayoutEmail.getEditText();
+        mLayoutSupplierEmail = findViewById(R.id.text_layout_email);
+        mSupplierEmailEditText = mLayoutSupplierEmail.getEditText();
         mLayoutPaymentBalance = findViewById(R.id.text_layout_payment_balance);
         mLayoutAdvancePayment = findViewById(R.id.text_layout_advance_payment);
         mLayoutSupplierPhone = findViewById(R.id.text_layout_phone_number);
@@ -210,7 +199,7 @@ public class AddFeatureActivity extends AppCompatActivity {
         mCurrencySymbol = Currency.getInstance(mLocal).getSymbol();
         mDummyLayout = findViewById(R.id.dummy_layout);
         mFeatureNameEditText = mLayoutFeatureName.getEditText();
-        mEmailEditText = mLayoutEmail.getEditText();
+        mSupplierEmailEditText = mLayoutSupplierEmail.getEditText();
         mSupplierNameEditText = mLayoutSupplierName.getEditText();
         mPaymentBalanceEditText = mLayoutPaymentBalance.getEditText();
         mAdvancePaymentEditText = mLayoutAdvancePayment.getEditText();
@@ -219,7 +208,7 @@ public class AddFeatureActivity extends AppCompatActivity {
         mQuantityEditText = mLayoutQuantity.getEditText();
         mFreeTextEditText = mLayoutFreeText.getEditText();
 
-        mRootReference = FirebaseDatabase.getInstance().getReference();
+        mRootRef = FirebaseDatabase.getInstance().getReference();
         mFirebaseAuth = FirebaseAuth.getInstance();
     }
 
@@ -243,7 +232,7 @@ public class AddFeatureActivity extends AppCompatActivity {
 
                     mDummyLayout.requestFocus();
 
-                    updateDatabase();
+                    updateDatabase(mIntent.hasExtra(FeaturesFragment.EXTRA_FEATURE_KEY));
 
                     Toast.makeText(this, R.string.success_feature_saved, Toast.LENGTH_SHORT).show();
 
@@ -257,65 +246,57 @@ public class AddFeatureActivity extends AppCompatActivity {
         }
     }
 
-    private void updateDatabase() {
+    private void updateDatabase(boolean isEditExistingFeature) {
         String featureName = mFeatureNameEditText.getText().toString();
         String paymentBalance = mPaymentBalanceEditText.getText().toString();
         String advancePayment = mAdvancePaymentEditText.getText().toString();
         String quantity = mQuantityEditText.getText().toString();
         String freeText = mFreeTextEditText.getText().toString();
-        String supplierEmail = mEmailEditText.getText().toString();
+        String supplierEmail = mSupplierEmailEditText.getText().toString();
         String supplierName = mSupplierNameEditText.getText().toString();
         String supplierPhone = mSupplierPhoneEditText.getText().toString();
-        String supplierKey = "";
-        String featureKey = "";
 
-        // If the user gave a name of the supplier (which is a must if he gave
-        // for him a phone number or an email) then create a record for this supplier
-        // The key for the records of suppliers for this user is the user id.
-        if (!TextUtils.isEmpty(supplierName)) {
-            supplierKey = mRootReference.child(Constants.PATH_SUPPLIERS)
-                    .child(mFirebaseAuth.getUid())
-                    .push()
-                    .getKey();
-
-        }
-        // Write the supplier record if it exists locally
-        if (supplierKey != null && !TextUtils.isEmpty(supplierKey)) {
-            mRootReference.child(Constants.PATH_SUPPLIERS)
-                    .child(mFirebaseAuth.getUid())
-                    .child(supplierKey)
-                    .setValue(new Supplier(supplierName, supplierPhone, supplierEmail));
-        }
         // Concat the local currency symbol with the payments
         if (!TextUtils.isEmpty(paymentBalance))
             paymentBalance = mCurrencySymbol + paymentBalance;
 
         if (!TextUtils.isEmpty(advancePayment))
             advancePayment = mCurrencySymbol + advancePayment;
-        // Create the feature record
+
 
         Feature feature = new Feature(
                 featureName,
-                supplierKey,
                 freeText,
                 advancePayment,
                 paymentBalance,
-                quantity);
-        // Write the record to the db
-        mRootReference.child(Constants.PATH_FEATURES)
+                quantity,
+                supplierName,
+                supplierEmail,
+                supplierPhone);
+
+        String key;
+
+        if (isEditExistingFeature)
+            key = mIntent.getStringExtra(FeaturesFragment.EXTRA_FEATURE_KEY);
+        else
+            key = mRootRef.child(Constants.PATH_FEATURES)
+                    .child(mFirebaseAuth.getUid())
+                    .push().getKey();
+        // Write the new feature record to the db
+        mRootRef.child(Constants.PATH_FEATURES)
                 .child(mFirebaseAuth.getUid())
-                .push()
+                .child(key)
                 .setValue(feature);
 
     }
 
     private boolean isDataValid() {
         String featureName = mFeatureNameEditText.getText().toString();
-        String supplierEmail = mEmailEditText.getText().toString();
+        String supplierEmail = mSupplierEmailEditText.getText().toString();
 
         // Feature name field can't be empty, therefore if this field is empty show an error.
         if (TextUtils.isEmpty(featureName)) {
-            mLayoutFeatureName.setError(getString(R.string.error_feature_name));
+            mLayoutFeatureName.setError(getString(R.string.error_required_field_empty));
             mLayoutFeatureName.requestFocus();
 
             return false;
@@ -325,8 +306,8 @@ public class AddFeatureActivity extends AppCompatActivity {
         // pattern doesn't match a valid email pattern
         // then show an error.
         if (!TextUtils.isEmpty(supplierEmail) && !Utils.isValidEmail(supplierEmail)) {
-            mLayoutEmail.setError(getString(R.string.error_chat_email_input));
-            mLayoutEmail.requestFocus();
+            mLayoutSupplierEmail.setError(getString(R.string.error_chat_email_input));
+            mLayoutSupplierEmail.requestFocus();
 
             return false;
         }
@@ -339,8 +320,10 @@ public class AddFeatureActivity extends AppCompatActivity {
             mLayoutSupplierName.requestFocus();
 
             return false;
-        } else
+
+        } else {
             mLayoutSupplierName.setError("");
+        }
 
         return true;
 
@@ -363,33 +346,6 @@ public class AddFeatureActivity extends AppCompatActivity {
     }
 
 
-    /**
-     * TextWatcher for the feature name, supplier name and supplier email
-     */
-    private static class FeatureTextWatcher implements TextWatcher {
-
-        private TextInputLayout mTextInputLayout;
-
-        public FeatureTextWatcher(TextInputLayout textInputLayout) {
-            mTextInputLayout = textInputLayout;
-
-        }
-
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            mTextInputLayout.setError("");
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-
-        }
-    }
 
 
     /**

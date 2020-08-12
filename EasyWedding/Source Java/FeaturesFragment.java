@@ -1,21 +1,13 @@
 package com.example.easywedding;
 
 import android.content.Intent;
-import android.content.res.TypedArray;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.InsetDrawable;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.versionedparcelable.ParcelImpl;
-import androidx.versionedparcelable.ParcelUtils;
 
-import android.os.Parcelable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,13 +15,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.easywedding.model.Feature;
-import com.example.easywedding.model.Message;
-import com.example.easywedding.model.Supplier;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -39,9 +28,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
-import java.util.ArrayList;
-import java.util.Date;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -60,7 +46,8 @@ public class FeaturesFragment extends Fragment {
     private FirebaseRecyclerAdapter<Feature, FeatureViewHolder> mAdapter;
 
     public static final String EXTRA_FEATURE = "com.example.easywedding.FEATURE";
-    public static final String EXTRA_SUPPLIER = "com.example.easywedding.SUPPLIER";
+    public static final String EXTRA_FEATURE_KEY = "com.example.easywedding.FEATURE_KEY";
+
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -112,6 +99,7 @@ public class FeaturesFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
 
         mFragmentLayout = inflater.inflate(R.layout.fragment_features, container, false);
+
         mFabAddFeature = mFragmentLayout.findViewById(R.id.fab_features);
 
         mFabAddFeature.setOnClickListener(new View.OnClickListener() {
@@ -126,6 +114,7 @@ public class FeaturesFragment extends Fragment {
         mRecyclerView = mFragmentLayout.findViewById(R.id.recyclerview_features);
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mRecyclerView.setHasFixedSize(true);
+
 
         /* FOR A DIVIDER.
 
@@ -170,7 +159,7 @@ public class FeaturesFragment extends Fragment {
                 .getReference().child(Constants.PATH_FEATURES)
                 .child(FirebaseAuth.getInstance().getUid());
 
-        FirebaseRecyclerOptions options = new FirebaseRecyclerOptions.Builder<Feature>()
+        FirebaseRecyclerOptions<Feature> options = new FirebaseRecyclerOptions.Builder<Feature>()
                 .setQuery(featuresReference, Feature.class)
                 .build();
 
@@ -178,6 +167,8 @@ public class FeaturesFragment extends Fragment {
             @Override
             protected void onBindViewHolder(@NonNull FeaturesFragment.FeatureViewHolder holder, final int position, @NonNull final Feature model) {
                 final String featureName = model.getName();
+                final String featureKey = getRef(position).getKey();
+
                 String paymentBalance = model.getPaymentBalance();
                 // TODO change this
                 holder.supplierName.setVisibility(View.GONE);
@@ -187,45 +178,16 @@ public class FeaturesFragment extends Fragment {
                 if (paymentBalance != null)
                     holder.paymentBalance.setText(paymentBalance);
 
+
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        // Give AddFeatureActivity the model object, which relates to the current
-                        // feature that the user pressed.
+                        // Pass AddFeatureActivity the model object, which relates to the current
+                        // feature that the user pressed on in FeaturesFragment.
                         mIntent = new Intent(getContext(), AddFeatureActivity.class);
-                        mIntent.putExtra(FeaturesFragment.EXTRA_FEATURE, model);
-                       // Get the id of the supplier (maybe don't exists) that supplies the current feature
-                        // that the user pressed on.
-                        String supplierId = model.getSupplierId();
-                        // If the there exitsts a supplier for this feature then get the supplier details for the db.
-                        if (supplierId != null && !TextUtils.isEmpty(supplierId)){
-                            DatabaseReference supplierRef = mRootRef.child(Constants.PATH_SUPPLIERS)
-                                    .child(mAuth.getUid())
-                                    .child(supplierId);
-                            supplierRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                    Supplier supplier = snapshot.getValue(Supplier.class);
-                                    if (supplier != null){
-                                        // If we fetched the data successfully then give AddFeatureActivity
-                                        // the supplier's details.
-                                        mIntent.putExtra(FeaturesFragment.EXTRA_SUPPLIER, supplier);
-                                        startActivity(mIntent);
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(@NonNull DatabaseError error) {
-
-                                }
-                            });
-                        }
-                        // The user didn't give a supplier for the feature.
-                        // Start AddFeatureActivity with only the feature as the input extra
-                        else{
-                            startActivity(mIntent);
-                        }
-
+                        mIntent.putExtra(EXTRA_FEATURE, model);
+                        mIntent.putExtra(EXTRA_FEATURE_KEY, featureKey);
+                        startActivity(mIntent);
                     }
                 });
             }
