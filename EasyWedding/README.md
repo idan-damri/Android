@@ -14,7 +14,7 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 ![Chat](demo/1_Chat.gif)
 
 #### Guests
-![Guests](demo/6_guests.gif)
+![shared data](demo/7_open_access and _invite.gif)
 
 ##### Arrival confirmation (Web) and update in Android
 ![Arrival confirmation](demo/8_arrival_confirmation.gif)
