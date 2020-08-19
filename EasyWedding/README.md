@@ -23,14 +23,22 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 ##### AuthUI sign-in flow
 ![AuthUI sign-in flow](demo/0_AuthUI.gif)
 
-### Features
-  - Firebase AuthUI sign-in flow.
-  - Multi-User Chat , for wedding content only.
-    - Open a chat and invite others to join.
+### App Features
+  
+    - Multi-User Chat, for wedding content only.
+    - Shared data - ask for data access and grant access to data.
+    - Arrival confirmation mechanism (Web + Android).
+    - Visual indication for guests arrival.
+    - Visual indication for payments to suppliers.
+    - CRUD operations on guests and features.
+    - Delete features by supplier
+    - Export guests and features with relevant data.
+    - Display the number of arriving guests and their joiners in the action bar. 
+    - Varied sort options for features and guests. For example, sort guests such that guests that are (not) arriving displayed first.  
+    - Strong data validation on features and guests forms.
+    - Support in Url, Phone Number and Email parsing (in chat).
+    - Firebase AuthUI sign-in flow.   
     - Supported languages are English and Hebrew.
-    - Support in Url, Phone Number and Email parsing.
-    
-    ***Note: A user can be only in one chat.***
 
 ### Todos
 - ##### Chat
