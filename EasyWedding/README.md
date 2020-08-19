@@ -10,12 +10,12 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 ![Guests](demo/6_guests.gif)
 #### Features
 ![Features](demo/5_features.gif)
-##### Add a new feature
-![Add a new feature](demo/4_add_a_feature.gif)
-##### User get an invite to a chat
-![User get an invite to a chat](demo/2_Chat_Invite.gif)
-##### New User opens a chat
-![AuthUI sign-in flow](demo/1_Chat.gif)
+##### Chat
+![Chat](demo/1_Chat.gif)
+##### Share wedding's data (Ask for access and grant access)
+![Share wedding's data](demo/7_open_access and invite.gif)
+##### Arrival confirmation (Web) and update in Android
+![Arrival confirmation](demo/8_arrival_confirmation.gif)
 ##### AuthUI sign-in flow
 ![AuthUI sign-in flow](demo/0_AuthUI.gif)
 
@@ -37,11 +37,7 @@ EasyWedding is an Android app that helps couples who are getting married to orga
    - Indication of when a user joins the chat or leaves the chat.
    - Sound feedback to actions.
    - Quotation.
-   - Invite to chat using Dynamic Links
-   - Send photos.
-- ##### Features
-   - Sorting and Deleting features by a given supplier.
-
+   - Send/receive image and pdf.
    
 ### Database
  - Firebase Realtime Database 
