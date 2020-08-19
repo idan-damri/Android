@@ -6,8 +6,10 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 
 ### Demos
 
-#### Guests                   |   
-![Guests](demo/6_guests.gif)  | ![Export guests](demo/8_export_guests.gif)
+#### Guests                      
+![Guests](demo/6_guests.gif)  
+#### Export guests
+![Export guests](demo/8_export_guests.gif)
 #### Features
 ![Features](demo/5_features.gif)
 ##### Chat
