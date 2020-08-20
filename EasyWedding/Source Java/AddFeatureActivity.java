@@ -65,6 +65,7 @@ public class AddFeatureActivity extends AppCompatActivity {
     // db
     private DatabaseReference mRootRef;
     private FirebaseAuth mFirebaseAuth;
+    private String mDataId;
     // Starting index to fetch the payments fields values (without the currency symbol).
     private final static int SKIPPED_CURRENCY_SYMBOL_INDEX = 1;
 
@@ -73,8 +74,6 @@ public class AddFeatureActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_features);
-
-        mIntent = getIntent();
 
         // Enable the up button.
         ActionBar ab = getSupportActionBar();
@@ -210,6 +209,10 @@ public class AddFeatureActivity extends AppCompatActivity {
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
         mFirebaseAuth = FirebaseAuth.getInstance();
+        mIntent = getIntent();
+
+        if (mIntent.hasExtra(Constants.FRAGMENT_DATA_ID_ARG))
+            mDataId = mIntent.getStringExtra(Constants.FRAGMENT_DATA_ID_ARG);
     }
 
     @Override
@@ -276,15 +279,16 @@ public class AddFeatureActivity extends AppCompatActivity {
 
         String key;
 
+
         if (isEditExistingFeature)
             key = mIntent.getStringExtra(FeaturesFragment.EXTRA_FEATURE_KEY);
         else
             key = mRootRef.child(Constants.PATH_FEATURES)
-                    .child(mFirebaseAuth.getUid())
+                    .child(mDataId)
                     .push().getKey();
         // Write the new feature record to the db
         mRootRef.child(Constants.PATH_FEATURES)
-                .child(mFirebaseAuth.getUid())
+                .child(mDataId)
                 .child(key)
                 .setValue(feature);
 

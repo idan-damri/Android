@@ -11,16 +11,26 @@ public class Message {
     private String name;
     private String senderId;
     private Long time;
+    private String photoUrl;
 
 
     //required for db
     public Message(){}
 
-    public Message(String text, String name,  Long time, String senderId){
+    public Message(String text, String name,  Long time, String senderId, String photoUrl){
         this.text = text;
         this.name = name;
         this.time = time;
         this.senderId = senderId;
+        this.photoUrl = photoUrl;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 
     public String getSenderId() {

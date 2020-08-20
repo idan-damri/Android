@@ -12,6 +12,8 @@ public class User {
     private String email;
     private Boolean invitesAllowed;
     private String chatId;
+    private String dataId;
+    private String owner;
 
     // <sender chatID, sender email>
     private Map<String, String> invitesReceived;
@@ -20,10 +22,34 @@ public class User {
     public User(){
 
     }
-    public User(String displayName, String email, Boolean invitesAllowed){
+    public User(String displayName, String email, Boolean invitesAllowed, String dataId){
         this.displayName = displayName;
         this.email = email;
         this.invitesAllowed = invitesAllowed;
+        this.dataId = dataId;
+    }
+    public User(String displayName, String email, Boolean invitesAllowed, String dataId, String owner){
+        this.displayName = displayName;
+        this.email = email;
+        this.invitesAllowed = invitesAllowed;
+        this.dataId = dataId;
+        this.owner = owner;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwnerE(String owner) {
+        this.owner = owner;
+    }
+
+    public String getDataId() {
+        return dataId;
+    }
+
+    public void setDataId(String dataId) {
+        this.dataId = dataId;
     }
 
     public Boolean isInvitesAllowed() {

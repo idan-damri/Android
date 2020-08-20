@@ -1,93 +1,97 @@
 package com.example.easywedding;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.easywedding.model.Feature;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.firebase.ui.database.ObservableSnapshotArray;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.Query;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link FeaturesFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+
 public class FeaturesFragment extends Fragment {
 
     private DatabaseReference mRootRef;
+    private Query mFeaturesReference;
     private FirebaseAuth mAuth;
+    private String mDataId;
     private Intent mIntent;
     private View mFragmentLayout;
     private FloatingActionButton mFabAddFeature;
     private LinearLayoutManager mLinearLayoutManager;
     private RecyclerView mRecyclerView;
     private FirebaseRecyclerAdapter<Feature, FeatureViewHolder> mAdapter;
+    private FirebaseRecyclerOptions<Feature> mOptions;
+    private String mQueryOrderByValue;
+
 
     public static final String EXTRA_FEATURE = "com.example.easywedding.FEATURE";
     public static final String EXTRA_FEATURE_KEY = "com.example.easywedding.FEATURE_KEY";
 
+    public static final int SORT_DIALOG_ALPHABETICALLY = 0;
+    public static final int SORT_DIALOG_BALANCE = 1;
+    public static final int SORT_DIALOG_SUPPLIER = 2;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    public static final String TAG = FeaturesFragment.class.getSimpleName();
+    private ProgressBar mProgressBar;
 
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     public FeaturesFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FeaturesFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static FeaturesFragment newInstance(String param1, String param2) {
-        FeaturesFragment fragment = new FeaturesFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+
+        Bundle bundle = getArguments();
+
+        if (bundle != null) {
+            if (bundle.containsKey(Constants.FRAGMENT_DATA_ID_ARG))
+                mDataId = bundle.getString(Constants.FRAGMENT_DATA_ID_ARG);
+            if (bundle.containsKey(Constants.FEATURES_SORT_KEY))
+                mQueryOrderByValue = bundle.getString(Constants.FEATURES_SORT_KEY);
         }
+
         setHasOptionsMenu(true);
     }
 
@@ -97,6 +101,7 @@ public class FeaturesFragment extends Fragment {
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
         mAuth = FirebaseAuth.getInstance();
+        mFeaturesReference = mRootRef.child(Constants.PATH_FEATURES).child(mDataId);
 
         mFragmentLayout = inflater.inflate(R.layout.fragment_features, container, false);
 
@@ -105,7 +110,9 @@ public class FeaturesFragment extends Fragment {
         mFabAddFeature.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getActivity(), AddFeatureActivity.class));
+                Intent intent = new Intent(getActivity(), AddFeatureActivity.class);
+                intent.putExtra(Constants.FRAGMENT_DATA_ID_ARG, mDataId);
+                startActivity(intent);
             }
         });
 
@@ -144,40 +151,214 @@ public class FeaturesFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()){
-            case R.id.action_delete_by_supplier:
-                Toast.makeText(getContext(),"DELETE SUPPLIERS",Toast.LENGTH_SHORT).show();
+        switch (item.getItemId()) {
+            case R.id.action_sort_feature:
+                showSortOptionsDialog();
                 return true;
+
+            case R.id.action_export_features:
+                exportFeatures();
+                return true;
+            case R.id.action_delete_by_supplier:
+                deleteBySupplier();
+                return true;
+
+            case R.id.action_delete_all_features:
+                deleteAllFeatures();
+                return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    private void deleteBySupplier() {
+        HashSet<String> names = new HashSet<>();
+        for (Feature feature : mAdapter.getSnapshots()) {
+            if (!TextUtils.isEmpty(feature.getSupplierName()))
+                names.add(feature.getSupplierName());
+        }
+    /*
+        final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
+                android.R.layout.simple_list_item_1);
+
+        for (String featureName : names)
+            adapter.add(featureName);
+    */
+        final String[] namesArray = names.toArray(new String[0]);
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
+        builder.setTitle(R.string.delete_sup_by_name)
+
+                .setItems(namesArray, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String supplierToDelete = namesArray[which];
+                        Map<String, Object> updatedFields = new HashMap<>();
+                        ObservableSnapshotArray<Feature> features = mAdapter.getSnapshots();
+                        for (int i = 0; i < features.size(); i++){
+                            if (features.get(i).getSupplierName().equals(supplierToDelete)){
+                                updatedFields.put("/" + Constants.PATH_FEATURES +
+                                        "/" + mDataId +
+                                        "/" + mAdapter.getRef(i).getKey(), null);
+                            }
+                        }
+                        mRootRef.updateChildren(updatedFields, new DatabaseReference.CompletionListener() {
+                            @Override
+                            public void onComplete(@Nullable DatabaseError error, @NonNull DatabaseReference ref) {
+                                if (error == null) {
+                                    Toast.makeText(getContext(), R.string.success_deleted_features, Toast.LENGTH_SHORT).show();
+                                }
+                                else{
+                                    Toast.makeText(getContext(), R.string.error_generic_msg, Toast.LENGTH_SHORT).show();
+                                    Log.v(TAG, error.toException().toString());
+                                }
+                            }
+
+                        });
+                    }
+                }).create().show();
+
+
+
+    }
+
+    private void deleteAllFeatures() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
+        builder.setTitle(R.string.delete_all_features)
+                .setMessage(R.string.confirm_delete_all_features)
+                .setPositiveButton(R.string.dialog_positive_yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mRootRef.child(Constants.PATH_FEATURES)
+                                .child(mDataId)
+                                .removeValue().addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                mAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+                }).setNegativeButton(R.string.dialog_negative_no, null)
+                .create().show();
+    }
+
+    /**
+     * export all the features as plain text
+     */
+    private void exportFeatures() {
+        StringBuilder sb = new StringBuilder(getString(R.string.tab_features_title) + ":\n\n");
+        String line = "--------------------\n";
+        String[] headers = getResources().getStringArray(R.array.features_export_headers);
+
+        for (Feature feature : mAdapter.getSnapshots()){
+            sb.append(line);
+            // Fetch the fields of the feature into an array
+            String[] featureData = feature.arrayValues();
+            for (int i = 0; i < featureData.length; i++){
+                sb.append(headers[i]).append(" : ").append(featureData[i]).append("\n");
+            }
+        }
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, sb.toString());
+        try {
+            startActivity(Intent.createChooser(intent, getString(R.string.title_export_features)));
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(getActivity(), R.string.error_generic_msg, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showSortOptionsDialog() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
+        builder.setTitle(R.string.action_sort_by)
+                .setItems(R.array.dialog_sort_features, new DialogInterface.OnClickListener() {
+
+                    String choice;
+                    FirebaseRecyclerOptions<Feature> newOptions;
+                    Query newFeaturesReference = mRootRef.child(Constants.PATH_FEATURES)
+                            .child(mDataId);
+
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        switch (which) {
+                            case SORT_DIALOG_ALPHABETICALLY:
+                                newOptions = new FirebaseRecyclerOptions.Builder<Feature>()
+                                        .setQuery(newFeaturesReference.orderByChild(choice = Constants.PATH_GUEST_NAME), Feature.class)
+                                        .build();
+                                // If we the user previously sorted by balance
+                                // then the layout is reversed so we need to reverse it again
+
+                                mLinearLayoutManager.setReverseLayout(false);
+                                mLinearLayoutManager.setStackFromEnd(false);
+                                break;
+
+
+                            case SORT_DIALOG_BALANCE:
+                                newOptions = new FirebaseRecyclerOptions.Builder<Feature>()
+                                        .setQuery(newFeaturesReference.orderByChild(choice = Constants.PATH_PAYMENT_BALANCE), Feature.class)
+                                        .build();
+                                // Symmetric explanation to the explanation above
+
+                                mLinearLayoutManager.setReverseLayout(true);
+                                mLinearLayoutManager.setStackFromEnd(true);
+                                break;
+
+                            case  SORT_DIALOG_SUPPLIER:
+                                newOptions = new FirebaseRecyclerOptions.Builder<Feature>()
+                                        .setQuery(newFeaturesReference.orderByChild(choice = Constants.PATH_SUPPLIER_NAME), Feature.class)
+                                        .build();
+                                mLinearLayoutManager.setReverseLayout(false);
+                                mLinearLayoutManager.setStackFromEnd(false);
+                                break;
+
+                        }
+                        // Save the sort preference in the user's phone
+                        SharedPreferences sharedPref = ((MainActivity) getActivity()).getPreferences(Context.MODE_PRIVATE);
+                        sharedPref.edit().putString(Constants.FEATURES_SORT_KEY, choice).apply();
+                        // If for some reason we'll quit and resume then in on start
+                        // we will use the new query value
+                        if (choice != null)
+                            mQueryOrderByValue = choice;
+                        // This will refresh the list with the sort preference.
+                        if (newOptions != null) {
+                            mAdapter.updateOptions(newOptions);
+                            // TODO I don't think this is necessary
+                            mOptions = newOptions;
+                        }
+                        if (newFeaturesReference != null)
+                            mFeaturesReference = newFeaturesReference;
+                    }
+
+                });
+        builder.create().show();
+    }
+
+
     private void setAdapter() {
-
-        DatabaseReference featuresReference = FirebaseDatabase.getInstance()
-                .getReference().child(Constants.PATH_FEATURES)
-                .child(FirebaseAuth.getInstance().getUid());
-
-        FirebaseRecyclerOptions<Feature> options = new FirebaseRecyclerOptions.Builder<Feature>()
-                .setQuery(featuresReference, Feature.class)
+        // If the user had previously set a sorting preference
+        if (!TextUtils.isEmpty(mQueryOrderByValue)) {
+            mFeaturesReference = mFeaturesReference.orderByChild(mQueryOrderByValue);
+           // If the sorting is by positive balances then we need to reverse the layout
+            // since in firebase, string are sorted in ascending order.
+            if (mQueryOrderByValue.equals(Constants.PATH_PAYMENT_BALANCE)) {
+                mLinearLayoutManager.setReverseLayout(true);
+                mLinearLayoutManager.setStackFromEnd(true);
+            }
+        }
+        mOptions = new FirebaseRecyclerOptions.Builder<Feature>()
+                .setQuery(mFeaturesReference, Feature.class)
                 .build();
 
-        mAdapter = new FirebaseRecyclerAdapter<Feature, FeaturesFragment.FeatureViewHolder>(options) {
+        mAdapter = new FirebaseRecyclerAdapter<Feature, FeaturesFragment.FeatureViewHolder>(mOptions) {
             @Override
             protected void onBindViewHolder(@NonNull FeaturesFragment.FeatureViewHolder holder, final int position, @NonNull final Feature model) {
-                final String featureName = model.getName();
+
                 final String featureKey = getRef(position).getKey();
 
-                String paymentBalance = model.getPaymentBalance();
-                // TODO change this
-                holder.supplierName.setVisibility(View.GONE);
-
-                if (featureName != null)
-                    holder.featureName.setText(featureName);
-                if (paymentBalance != null)
-                    holder.paymentBalance.setText(paymentBalance);
-
+                holder.supplierName.setText(model.getSupplierName());
+                holder.featureName.setText(model.getName());
+                holder.paymentBalance.setText(model.getPaymentBalance());
 
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -187,9 +368,12 @@ public class FeaturesFragment extends Fragment {
                         mIntent = new Intent(getContext(), AddFeatureActivity.class);
                         mIntent.putExtra(EXTRA_FEATURE, model);
                         mIntent.putExtra(EXTRA_FEATURE_KEY, featureKey);
+                        mIntent.putExtra(Constants.FRAGMENT_DATA_ID_ARG, mDataId);
                         startActivity(mIntent);
                     }
                 });
+
+                holder.popupMenuButton.setOnClickListener(setPopupMenuClickListener(getRef(position).getKey(), model));
             }
 
             @NonNull
@@ -203,19 +387,19 @@ public class FeaturesFragment extends Fragment {
         };
 
 
-        // According to Google codelabs. Always scroll to bottom.
+        // Scroll to last item.
         mAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
-                int friendlyMessageCount = mAdapter.getItemCount();
+                int itemsCount = mAdapter.getItemCount();
                 int lastVisiblePosition =
                         mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                 // If the recycler view is initially being loaded or the
                 // user is at the bottom of the list, scroll to the bottom
                 // of the list to show the newly added message.
                 if (lastVisiblePosition == -1 ||
-                        (positionStart >= (friendlyMessageCount - 1) &&
+                        (positionStart >= (itemsCount - 1) &&
                                 lastVisiblePosition == (positionStart - 1))) {
                     mRecyclerView.scrollToPosition(positionStart);
                 }
@@ -224,18 +408,87 @@ public class FeaturesFragment extends Fragment {
 
         mRecyclerView.setAdapter(mAdapter);
     }
+
+    private View.OnClickListener setPopupMenuClickListener(final String featureKey, final Feature model) {
+
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+                popupMenu.inflate(R.menu.features_popup_menu);
+                // if gave permission to sms then set visible , else invisible
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.getItemId()) {
+
+                            case R.id.action_delete_feature:
+                                deleteFeature(featureKey, model.getName());
+                                return true;
+                            case R.id.action_call_supplier:
+                                callSupplier(model.getSupplierPhone());
+                                return true;
+
+                            default:
+                                return false;
+                        }
+                    }
+                });
+                popupMenu.show();
+            }
+        };
+    }
+
+    private void callSupplier(String supplierPhone) {
+        if (supplierPhone == null || TextUtils.isEmpty(supplierPhone)) {
+            Toast.makeText(getContext(), R.string.error_no_supplier_phone, Toast.LENGTH_SHORT).show();
+        } else {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + supplierPhone.trim()));
+            startActivity(intent);
+        }
+    }
+
+    private void deleteFeature(final String featureKey, String featureName) {
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
+        builder.setTitle(getString(R.string.dialog_delete_list_item) + " " + featureName + "?")
+                .setPositiveButton(R.string.dialog_positive_yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mRootRef.child(Constants.PATH_FEATURES)
+                                .child(mDataId)
+                                .child(featureKey)
+                                .removeValue().addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                mAdapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+                }).setNegativeButton(R.string.dialog_negative_no, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // intentionally left blank
+            }
+        }).create().show();
+    }
+
     public static class FeatureViewHolder extends RecyclerView.ViewHolder {
 
         TextView featureName, supplierName, paymentBalance;
+        ImageButton popupMenuButton;
 
         public FeatureViewHolder(@NonNull View itemView) {
             super(itemView);
 
             featureName = itemView.findViewById(R.id.list_item_feature_name);
-            supplierName= itemView.findViewById(R.id.list_item_supplier_name);
+            supplierName = itemView.findViewById(R.id.list_item_supplier_name);
             paymentBalance = itemView.findViewById(R.id.list_item_balance);
+            popupMenuButton = itemView.findViewById(R.id.features_item_popup);
         }
     }
+
 
     @Override
     public void onStart() {
@@ -243,7 +496,10 @@ public class FeaturesFragment extends Fragment {
 
         if (mAdapter != null)
             mAdapter.startListening();
+
     }
+
+
 
     @Override
     public void onStop() {

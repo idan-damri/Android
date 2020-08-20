@@ -24,7 +24,7 @@ public class Feature implements Parcelable {
             , String supplierName, String supplierEmail
             , String supplierPhone ) {
         this.name = name;
-        this.supplierName = supplierName;
+        this.supplierName = supplierName.trim();
         this.supplierEmail = supplierEmail;
         this.supplierPhone = supplierPhone;
         this.freeText = freeText;
@@ -141,5 +141,11 @@ public class Feature implements Parcelable {
     public void setPaymentBalance(String paymentBalance) {
         this.paymentBalance = paymentBalance;
     }
-    
+
+    @Exclude
+    public String[] arrayValues(){
+        return new String[] {name, supplierName, supplierPhone, supplierEmail,
+        advancePayment, paymentBalance, quantity, freeText};
+
+    }
 }
