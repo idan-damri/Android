@@ -21,21 +21,27 @@
 
     <!-- A horizontal line between the tabs to the viewpager -->
     <View
-
+        android:id="@+id/main_tabs_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#dfdfdf"
         android:layout_marginBottom="0dp"
         />
 
+    <ProgressBar
+        android:id="@+id/main_progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"/>
+
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/main_viewpager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-
-        >
+        android:layout_weight="1">
 
     </androidx.viewpager2.widget.ViewPager2>
+
+
 
 </LinearLayout>
