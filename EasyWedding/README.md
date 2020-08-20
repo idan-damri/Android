@@ -47,10 +47,9 @@ EasyWedding is an Android app that helps couples who are getting married to orga
    - Sound feedback to actions.
    - Quotation.
    - Send/receive image and pdf.
-   ### General
+   #### General
    - Integrate MVVP.
    - Query contacts asynchronously.
-   
 ### Database
  - Firebase Realtime Database 
      
