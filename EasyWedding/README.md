@@ -41,12 +41,15 @@ EasyWedding is an Android app that helps couples who are getting married to orga
     - Supported languages are English and Hebrew.
 
 ### Todos
-- ##### Chat
+   ##### Chat
    - Message confirmation.
    - Indication of when a user joins the chat or leaves the chat.
    - Sound feedback to actions.
    - Quotation.
    - Send/receive image and pdf.
+   ### General
+   - Integrate MVVP.
+   - Query contacts asynchronously.
    
 ### Database
  - Firebase Realtime Database 
