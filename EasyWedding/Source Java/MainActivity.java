@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                                         if (snapshot.exists()) {
                                             mDataId = snapshot.getValue(String.class);
-                                            // save the chat id in the user device. We'll listen
+                                            // save the data id in the user device. We'll listen
                                             // to the user data id in the db only once in this listener.
                                             // That happens when the user sign up for the first time
                                             // or mDataId wiped from the user device after the user uninstalled the app
