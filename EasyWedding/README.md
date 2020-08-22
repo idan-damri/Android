@@ -42,14 +42,15 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 
 ### Todos
    ##### Chat
+   - Push Notification.
    - Message confirmation.
    - Indication of when a user joins the chat or leaves the chat.
    - Sound feedback to actions.
    - Quotation.
    - Send/receive image and pdf.
+   - Query contacts asynchronously.
    #### General
    - Integrate MVVP.
-   - Query contacts asynchronously.
 ### Database
  - Firebase Realtime Database 
      
