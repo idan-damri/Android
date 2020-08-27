@@ -20,8 +20,6 @@ EasyWedding is an Android app that helps couples who are getting married to orga
 
 ##### Arrival confirmation (Web) and update in Android
 ![Arrival confirmation](demo/8_arrival_confirmation.gif)
-##### AuthUI sign-in flow
-![AuthUI sign-in flow](demo/0_AuthUI.gif)
 
 ### App Features
   
