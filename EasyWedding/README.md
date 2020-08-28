@@ -3,6 +3,17 @@
 EasyWedding is an Android app that helps couples who are getting married to organize their wedding.
 
 ***Build is in progress.***
+  ### Todos
+   #### General
+   - Integrate MVVP.
+    - Query contacts asynchronously (using java.util.concurrent)
+   ##### Chat
+   - Push Notification.
+   - Message confirmation.
+   - Indication of when a user joins the chat or leaves the chat.
+   - Sound feedback to actions.
+   - Quotation.
+   - Send/receive image and pdf. 
 
 ### Demos
 
@@ -38,17 +49,7 @@ EasyWedding is an Android app that helps couples who are getting married to orga
     - Firebase AuthUI sign-in flow.   
     - Supported languages are English and Hebrew.
 
-### Todos
-   ##### Chat
-   - Push Notification.
-   - Message confirmation.
-   - Indication of when a user joins the chat or leaves the chat.
-   - Sound feedback to actions.
-   - Quotation.
-   - Send/receive image and pdf.
-   - Query contacts asynchronously.
-   #### General
-   - Integrate MVVP.
+
 ### Database
  - Firebase Realtime Database 
      
