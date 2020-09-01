@@ -62,7 +62,7 @@ public class AddFeatureActivity extends AppCompatActivity {
     private Intent mIntent;
 
     // For handling focus and soft keyboard events
-    // when we start finish the activity.
+    // when we start and finish the activity.
     private LinearLayout mDummyLayout;
     // db
     private DatabaseReference mRootRef;
