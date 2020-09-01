@@ -3,6 +3,9 @@ package com.example.easywedding.model;
 import java.util.Comparator;
 import java.util.Objects;
 
+/**
+ * This class represent an invited contact.
+ */
 public class Contact implements Comparable<Contact> {
 
     private String name;
@@ -11,9 +14,13 @@ public class Contact implements Comparable<Contact> {
 
     //true if the contact is invited to the wedding
     private boolean invited;
+    // The db id of the user who invited this contact
     private String uid;
 
 
+    public Contact(){
+        // Required
+    }
 
     public Contact(String name, String phoneNumber, String photo, boolean invited, String uid) {
         this.name = name.trim();
@@ -77,11 +84,21 @@ public class Contact implements Comparable<Contact> {
         return Objects.hash(name);
     }
 
+    /**
+     *
+     * @param other the other contact
+     * @return 1 of this contact is greater then other (alphabetically),
+     * -1 of the symmetric claim holds and 0 if they are equal.
+     */
     @Override
     public int compareTo(Contact other) {
         return this.getName().compareTo(other.getName());
     }
 
+    /**
+     *
+     * @return a Guest object from a Contact object
+     */
     public Guest getGuestInstanceFromContact(){
         return new Guest(name, phoneNumber, 0,"", false, false, "0", false);
     }

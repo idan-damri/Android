@@ -7,6 +7,9 @@ import com.google.firebase.database.Exclude;
 
 import java.util.Objects;
 
+/**
+ * This class represents a wedding guest
+ */
 public class Guest implements Parcelable {
 
     private String name;
@@ -20,7 +23,7 @@ public class Guest implements Parcelable {
 
 
     public Guest() {
-
+        // Required for db
     }
 
     public Guest(String name, String phoneNumber, int priority,
@@ -144,29 +147,4 @@ public class Guest implements Parcelable {
         this.arrive = arrive;
     }
 
-
-
-    /*
-    @Exclude
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        Guest guest = (Guest) other;
-        return name.equals(guest.name);
-    }
-
-    @Exclude
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
-    }
-
-    @Exclude
-    @Override
-    public int compareTo(Guest other) {
-        return this.getName().compareTo(other.getName());
-    }
-
- */
 }

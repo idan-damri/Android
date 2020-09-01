@@ -13,7 +13,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
@@ -35,7 +34,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.easywedding.model.Feature;
 import com.example.easywedding.model.Guest;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
@@ -70,9 +68,6 @@ public class GuestsFragment extends Fragment {
     private String guestKeyActivityResult;
     private String mQueryOrderByValue;
     private boolean mIsSortByArriving;
-    private int mArriving;
-
-    private ProgressBar mProgressBar;
 
     private String mSubtitle;
 
@@ -101,7 +96,9 @@ public class GuestsFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         Bundle bundle = getArguments();
-
+        // fetch relevant data from the main activity.
+        // such as the data id of the user, his last sort choice and the direction of the sort
+        // for the arriving guests field
         if (bundle != null && bundle.containsKey(Constants.FRAGMENT_DATA_ID_ARG)) {
             mDataId = bundle.getString(Constants.FRAGMENT_DATA_ID_ARG);
         }
@@ -113,6 +110,8 @@ public class GuestsFragment extends Fragment {
             mIsSortByArriving = bundle.getBoolean(Constants.GUEST_ARRIVAL_SORT_BOOL_VAL);
 
         mSubtitle = getString(R.string.arriving);
+
+        // this fragment has an options menu
         setHasOptionsMenu(true);
 
 
@@ -159,7 +158,9 @@ public class GuestsFragment extends Fragment {
         return phones;
     }
 
-
+    /**
+     * Attach the {@link FirebaseRecyclerAdapter} to the {@link RecyclerView}
+     */
     private void setAdapter() {
         // If the user had previously set a sorting preference
         if (!TextUtils.isEmpty(mQueryOrderByValue)) {
@@ -175,16 +176,24 @@ public class GuestsFragment extends Fragment {
                 .build();
 
         mAdapter = new FirebaseRecyclerAdapter<Guest, GuestsFragment.GuestViewHolder>(mOptions) {
-           private static final int FOOTER_VIEW = 1;
-
+            /**
+             * When the guest list is changed then count the number of arriving guest.
+             * and pass this information to the {@link MainActivity} via the {@link OnGuestArrivingCountPass} interface
+             */
             @Override
             public void onDataChanged() {
                 super.onDataChanged();
 
-                mArrivingCountPasser.OnGuestArrivingCountPass(countArriving());
+                mArrivingCountPasser.onGuestArrivingCountPass(countArriving());
 
             }
 
+            /**
+             *
+             * @param holder holds the {@link View's} of the {@link Guest} item list
+             * @param position the position of the {@link Guest} list item
+             * @param model the data of the {@link Guest} is contained in this model variable
+             */
             @Override
             protected void onBindViewHolder(@NonNull GuestsFragment.GuestViewHolder holder, final int position, @NonNull final Guest model) {
 
@@ -197,15 +206,16 @@ public class GuestsFragment extends Fragment {
 
                 if (name != null)
                     holder.guestName.setText(name);
-
+                // if we already sent an invite to this guest
+                // then set the relevant text message in the guest list item
                 if (isInvitationSent) {
                     holder.invited.setVisibility(View.VISIBLE);
-                    holder.invited.setText(R.string.invitation_was_sent_text);
+                    holder.invited.setText(R.string.confirmation_was_sent_text);
                 } else {
                     holder.invited.setVisibility(View.GONE);
                 }
 
-
+                // if the guest is arriving then color the relevant icon with blue, else with gray
                 if (isArriving)
                     holder.arrivingImageIndicator.setImageResource(R.drawable.vector_guest_check_outlined_24);
 
@@ -266,7 +276,10 @@ public class GuestsFragment extends Fragment {
 
     }
 
-
+    /**
+     *
+     * @return the number of guests that arrive to the wedding
+     */
     private int countArriving() {
         int count = 0;
         for (Guest guest : mAdapter.getSnapshots())
@@ -285,6 +298,14 @@ public class GuestsFragment extends Fragment {
         return count;
     }
 
+    /**
+     *
+     * @param guestKey th ekey of the {@link Guest}
+     * @param model containint the {@link Guest} data
+     * @return an {@link android.view.View.OnClickListener}
+     * When the user clicks on the {@link PopupMenu} icon in the {@link Guest} list item
+     * then show a {@link PopupMenu}
+     */
     private View.OnClickListener setPopupMenuClickListener(final String guestKey, final Guest model) {
 
         return new View.OnClickListener() {
@@ -332,7 +353,10 @@ public class GuestsFragment extends Fragment {
     private void startFileChooser(String guestKey) {
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("text/plain")
-                .putExtra(Intent.EXTRA_TEXT, buildArriveConfirmationUrl(guestKey).toString());
+                .putExtra(Intent.EXTRA_TEXT,
+                        getString(R.string.share_confirm_message_header) +
+                                "\n" +
+                                buildArriveConfirmationUrl(guestKey).toString());
         try {
             startActivityForResult(Intent.createChooser(intent, getString(R.string.title_share_confirm_text)), RC_SHARED_CONFIRM);
         } catch (android.content.ActivityNotFoundException ex) {
@@ -384,12 +408,6 @@ public class GuestsFragment extends Fragment {
         }
     }
 
-    public static class FooterViewHolder extends RecyclerView.ViewHolder{
-
-        public FooterViewHolder(@NonNull View itemView) {
-            super(itemView);
-        }
-    }
 
 
     @Override
@@ -424,6 +442,9 @@ public class GuestsFragment extends Fragment {
 
     }
 
+    /**
+     * Show the available sort options in the {@link Guest} list
+     */
     private void showSortOptionsDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.action_sort_by)
@@ -544,6 +565,9 @@ public class GuestsFragment extends Fragment {
         }
     }
 
+    /**
+     * Delete all the {@link Guest's} in the db
+     */
     private void deleteAllGuests() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
         builder.setTitle(R.string.delete_all_guests)
@@ -564,6 +588,11 @@ public class GuestsFragment extends Fragment {
                 .create().show();
     }
 
+    /**
+     * Create arrival confirmation links {@link MaterialAlertDialogBuilder}
+     * that alert the user that he's about to send  SMS message to all the guests
+     * that were not invited to the wedding yet
+     */
     private void createMultiArrivalConfirmationDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
         builder.setTitle(R.string.dialog_title_send_multi_sms)
@@ -581,9 +610,13 @@ public class GuestsFragment extends Fragment {
         }).create().show();
     }
 
+    /**
+     * send SMS message to all the guests
+     *      * that were not invited to the wedding yet
+     */
     private void sendMultiArrivalConfirmationsBySms() {
         //TODO handle this message header
-        String messageHeader = getString(R.string.sms_message_header);
+        String messageHeader = getString(R.string.share_confirm_message_header);
 
         StringBuilder sb;
 
@@ -625,15 +658,17 @@ public class GuestsFragment extends Fragment {
         return new StringBuilder(builder.build().toString());
     }
 
+
     @Override
     public void onStart() {
         super.onStart();
-
+    //start listen to change in the guests
         if (mAdapter != null)
             mAdapter.startListening();
 
 
     }
+
 
     @Override
     public void onPause() {
@@ -646,7 +681,7 @@ public class GuestsFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-
+       // stop listening to change in guests
         if (mAdapter != null)
             mAdapter.stopListening();
 
@@ -721,14 +756,11 @@ public class GuestsFragment extends Fragment {
 
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-
-
-    }
-
+    /**
+     * When this fragment is attached to {@link MainActivity} then
+     * assign to {@link OnGuestArrivingCountPass} the context (which implements the interface).
+     * @param context the {@link MainActivity}
+     */
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
@@ -736,7 +768,16 @@ public class GuestsFragment extends Fragment {
          mArrivingCountPasser = (OnGuestArrivingCountPass)context;
     }
 
+    /**
+     * This interface was created to enable safe communication with {@link MainActivity}.
+     * When the data in the adapter is changed we update the number of arriving guests and their joiners.
+     * This value will be passes to {@link MainActivity}.
+     */
     public interface OnGuestArrivingCountPass {
-        public void OnGuestArrivingCountPass(int guestCount);
+        /**
+         *
+         * @param guestCount the number of arriving guests and their joiners.
+         */
+        void onGuestArrivingCountPass(int guestCount);
     }
 }

@@ -39,7 +39,6 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -96,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
     private DatabaseReference mOwnerRef;
     private ViewPager2.OnPageChangeCallback mPageChangeListener;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,23 +104,17 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
         mTabsDivider = findViewById(R.id.main_tabs_divider);
 
         isDataCleared = true;
-        mDataId = "";
-
         // AppBar
         mSubtitleSuffix = getString(R.string.arriving);
         // DB
         mRootReference = FirebaseDatabase.getInstance().getReference();
         mFirebaseAuth = FirebaseAuth.getInstance();
-        // SharedPreference
-        mSharedPref = getPreferences(Context.MODE_PRIVATE);
-        mFeaturesSortVal = mSharedPref.getString(Constants.FEATURES_SORT_KEY, "");
-        mGuestsSortVal = mSharedPref.getString(Constants.GUESTS_SORT_KEY, "");
-        mIsSortGuestByArriving = mSharedPref.getBoolean(Constants.GUEST_ARRIVAL_SORT_BOOL_VAL, false);
-        mDataId = mSharedPref.getString(Constants.FRAGMENT_DATA_ID_ARG, "");
-        mHasSharedData = mSharedPref.getBoolean(Constants.HAS_SHARED_DATA, false);
 
-        if (!mHasSharedData)
-            checkIfUSerWipedAppData();
+        setSharedPrefFields();
+
+       // if (!mHasSharedData)
+       //     checkIfUSerWipedAppData();
+
 
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -143,7 +135,10 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                                         if (snapshot.exists()) {
                                             mDataId = snapshot.getValue(String.class);
-                                            // save the data id in the user device. We'll listen
+
+                                            if (mDataId != null && !TextUtils.isEmpty(mDataId))
+
+                                            // save the chat id in the user device. We'll listen
                                             // to the user data id in the db only once in this listener.
                                             // That happens when the user sign up for the first time
                                             // or mDataId wiped from the user device after the user uninstalled the app
@@ -159,6 +154,8 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
 
                                             mProgressBar.setVisibility(View.GONE);
                                             mTabsDivider.setVisibility(View.VISIBLE);
+
+
                                         }
                                     }
 
@@ -185,6 +182,20 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
             }
         };
 
+    }
+
+    /**
+     * Set the fields that dependent on in-device memory values
+     * these fields will save us queries to the db
+     */
+    private void setSharedPrefFields() {
+        mSharedPref = getPreferences(Context.MODE_PRIVATE);
+        mFeaturesSortVal = mSharedPref.getString(Constants.FEATURES_SORT_KEY, "");
+        mGuestsSortVal = mSharedPref.getString(Constants.GUESTS_SORT_KEY, "");
+        mIsSortGuestByArriving = mSharedPref.getBoolean(Constants.GUEST_ARRIVAL_SORT_BOOL_VAL, false);
+        mDataId = mSharedPref.getString(Constants.FRAGMENT_DATA_ID_ARG, "");
+       // mHasSharedData = mSharedPref.getBoolean(Constants.HAS_SHARED_DATA, false);
+        mDataId = "";
     }
 
     /**
@@ -230,7 +241,8 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                             String owner = snapshot.getValue(String.class);
-
+                            // If the user have the special value "noOwner" for the owner field
+                            // in the db then his data is shared.
                             if (owner != null && owner.equals(Constants.NO_OWNER_INDICATOR)) {
                                 mHasSharedData = true;
                                 mSharedPref.edit().putBoolean(Constants.HAS_SHARED_DATA, true).apply();
@@ -288,8 +300,8 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                             FirebaseUser user = mFirebaseAuth.getCurrentUser();
 
 
-                            User newUser = new User(user.getDisplayName(),// TODO change invitesAllowed to false
-                                    user.getEmail(), true, user.getUid());
+                            User newUser = new User(user.getDisplayName(),
+                                    user.getEmail(), user.getUid());
 
 
                             Map<String, Object> updatedFields = new HashMap<>();
@@ -300,11 +312,6 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                                     user.getUid(), newUser);
 
                             mRootReference.updateChildren(updatedFields);
-                            /*
-                            mRootReference.child(Constants.PATH_USERS)
-                                    .child(user.getUid())
-                                    .setValue(newUser);
-                            */
 
                         }
 
@@ -325,8 +332,9 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
 
     @Override
     protected void onResume() {
-
         super.onResume();
+        // start/resume listening to changes in db related data
+
         if (mFirebaseAuth != null)
             mFirebaseAuth.addAuthStateListener(mAuthStateListener);
 
@@ -340,12 +348,15 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
             mViewPager2.registerOnPageChangeCallback(mPageChangeListener);
         }
 
+
     }
+
+
 
     @Override
     protected void onPause() {
         super.onPause();
-
+       // Stop listening to changes in db related data
         if (mFirebaseAuth != null)
             mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
 
@@ -358,9 +369,13 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
             mViewPager2.unregisterOnPageChangeCallback(mPageChangeListener);
             mPageChangeListener = null;
         }
+
     }
 
 
+    /**
+     * create a sign-in flow with a  {@link Intent} when a user need to sign-up/sign-in
+     */
     public void createSignInIntent() {
 
         // Choose authentication providers
@@ -374,6 +389,8 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                         .createSignInIntentBuilder()
                         .setAvailableProviders(providers)
                         .setIsSmartLockEnabled(false)
+                        .setLogo(R.drawable.ic_easywedding_logo)
+                        .setTheme(R.style.LoginTheme)
                         .build(),
                 RC_SIGN_IN);
     }
@@ -413,6 +430,7 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
         // link the TabLayout with the ViewPager
         new TabLayoutMediator(mTabLayout, mViewPager2,
                 new TabLayoutMediator.TabConfigurationStrategy() {
+
                     @Override
                     public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
                         // set tab title according to its position
@@ -421,10 +439,12 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                                 tab.setText(R.string.tab_features_title);
                                 tab.setIcon(R.drawable.vector_features_24);
                                 break;
+
                             case GUESTS_POSITION:
                                 tab.setText(R.string.tab_guests_title);
                                 tab.setIcon(R.drawable.vector_guests_24);
                                 break;
+
                             case CHAT_POSITION:
                                 tab.setText(R.string.tab_chat_title);
                                 tab.setIcon(R.drawable.vector_chat_24);
@@ -434,8 +454,9 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
                 }
         ).attach();
 
-    }
 
+
+    }
 
 
     @Override
@@ -534,8 +555,9 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
     }
 
     /**
-     * TODO
-     * @param email
+     * Grant access to shared data. This will add the requesting user  to the goup
+     * of the current user. After that they will share the data of the current user
+     * @param email the email of the user who requested data acccess
      */
     private void grantAccessToSharedData(final String email) {
         Query query = mRootReference.child(Constants.PATH_USERS)
@@ -681,6 +703,10 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
         });
     }
 
+    /**
+     * Inform the user that his data is about to change.
+     * This will happen after this user asked for data access and then his request was granted
+     */
     private void createDataIsAboutToChangeDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_title_access_granted)
@@ -768,7 +794,7 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
      * @param guestCount the number of guests that confirmed arrival (in a direct or indirect way).
      */
     @Override
-    public void OnGuestArrivingCountPass(int guestCount) {
+    public void onGuestArrivingCountPass(int guestCount) {
         mArrivingGuestCount = guestCount;
         ActionBar ab = getSupportActionBar();
         // Required since in some cases, the guests adapter will finish to load the data (guests)
@@ -780,6 +806,8 @@ public class MainActivity extends AppCompatActivity implements GuestsFragment.On
             ab.setSubtitle(mArrivingGuestCount + " " + mSubtitleSuffix);
         }
     }
+
+
 }
 
 

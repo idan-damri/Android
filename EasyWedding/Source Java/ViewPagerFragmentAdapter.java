@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-/*
+/**
 Implementation of view pager adapter that uses a Fragment to manage each page.
 This class also handles saving and restoring of fragment's state.
  */
@@ -38,7 +38,7 @@ public class ViewPagerFragmentAdapter extends FragmentStateAdapter {
         bundle.putString(Constants.FEATURES_SORT_KEY, mSortQueryFeatures);
         bundle.putString(Constants.GUESTS_SORT_KEY, mSortQueryGuests);
         bundle.putBoolean(Constants.GUEST_ARRIVAL_SORT_BOOL_VAL, mIsSortGuestByArriving);
-
+        // Create the fragment at position "position" and set arguments (pass data to the fragment)
         switch (position){
             case MainActivity.FEATURES_POSITION:
                 FeaturesFragment featuresFragment = new FeaturesFragment();

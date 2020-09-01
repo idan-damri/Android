@@ -5,6 +5,9 @@ import android.os.Parcelable;
 
 import com.google.firebase.database.Exclude;
 
+/**
+ * This class represents a wedding feature
+ */
 public class Feature implements Parcelable {
 
     private String name;
@@ -17,7 +20,7 @@ public class Feature implements Parcelable {
     private String quantity;
 
     public Feature(){
-
+// required for db
     }
     public Feature(String name, String freeText, String advancePayment
             , String paymentBalance, String quantity

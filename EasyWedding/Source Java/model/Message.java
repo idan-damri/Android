@@ -1,10 +1,12 @@
 package com.example.easywedding.model;
 
 
-// POJO that represent a message in a chat.
 
 import java.util.Date;
 
+/**
+ * This class represents a chat message
+ */
 public class Message {
 
     private String text;

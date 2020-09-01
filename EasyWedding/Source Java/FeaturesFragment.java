@@ -9,7 +9,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -23,7 +23,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -48,21 +48,23 @@ import java.util.Map;
 
 
 public class FeaturesFragment extends Fragment {
-
+    //db fields
     private DatabaseReference mRootRef;
     private Query mFeaturesReference;
     private FirebaseAuth mAuth;
     private String mDataId;
     private Intent mIntent;
     private View mFragmentLayout;
-    private FloatingActionButton mFabAddFeature;
-    private LinearLayoutManager mLinearLayoutManager;
-    private RecyclerView mRecyclerView;
     private FirebaseRecyclerAdapter<Feature, FeatureViewHolder> mAdapter;
     private FirebaseRecyclerOptions<Feature> mOptions;
     private String mQueryOrderByValue;
+    // fab
+    private FloatingActionButton mFabAddFeature;
+    // list fields
+    private LinearLayoutManager mLinearLayoutManager;
+    private RecyclerView mRecyclerView;
 
-
+    // Keys for passing data to AddFeatureActivity
     public static final String EXTRA_FEATURE = "com.example.easywedding.FEATURE";
     public static final String EXTRA_FEATURE_KEY = "com.example.easywedding.FEATURE_KEY";
 
@@ -71,8 +73,6 @@ public class FeaturesFragment extends Fragment {
     public static final int SORT_DIALOG_SUPPLIER = 2;
 
     public static final String TAG = FeaturesFragment.class.getSimpleName();
-    private ProgressBar mProgressBar;
-
 
     public FeaturesFragment() {
         // Required empty public constructor
@@ -84,14 +84,15 @@ public class FeaturesFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         Bundle bundle = getArguments();
-
+    // fetch the relevant data from MainActivity
+        // such as the data id of the current user and the query he used last time
         if (bundle != null) {
             if (bundle.containsKey(Constants.FRAGMENT_DATA_ID_ARG))
                 mDataId = bundle.getString(Constants.FRAGMENT_DATA_ID_ARG);
             if (bundle.containsKey(Constants.FEATURES_SORT_KEY))
                 mQueryOrderByValue = bundle.getString(Constants.FEATURES_SORT_KEY);
         }
-
+        // indicate that this fragment have an options menu
         setHasOptionsMenu(true);
     }
 
@@ -122,20 +123,6 @@ public class FeaturesFragment extends Fragment {
         mRecyclerView.setLayoutManager(mLinearLayoutManager);
         mRecyclerView.setHasFixedSize(true);
 
-
-        /* FOR A DIVIDER.
-
-        int[] ATTRS = new int[]{android.R.attr.listDivider};
-        TypedArray a = getContext().obtainStyledAttributes(ATTRS);
-        Drawable divider = a.getDrawable(0);
-        int inset = (int)getResources().getDimension(R.dimen.activity_horizontal_margin);
-        InsetDrawable insetDivider = new InsetDrawable(divider, inset, 0, inset, 0);
-        a.recycle();
-
-        DividerItemDecoration itemDecoration = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL);
-        //itemDecoration.setDrawable(insetDivider);
-        mRecyclerView.addItemDecoration(itemDecoration);
-        */
 
         setAdapter();
 
@@ -172,30 +159,27 @@ public class FeaturesFragment extends Fragment {
         }
     }
 
+    /**
+     * Delete features of a specific supplier. The key is the supplier name.
+     */
     private void deleteBySupplier() {
         HashSet<String> names = new HashSet<>();
         for (Feature feature : mAdapter.getSnapshots()) {
             if (!TextUtils.isEmpty(feature.getSupplierName()))
                 names.add(feature.getSupplierName());
         }
-    /*
-        final ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(),
-                android.R.layout.simple_list_item_1);
 
-        for (String featureName : names)
-            adapter.add(featureName);
-    */
         final String[] namesArray = names.toArray(new String[0]);
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
         builder.setTitle(R.string.delete_sup_by_name)
-
                 .setItems(namesArray, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String supplierToDelete = namesArray[which];
                         Map<String, Object> updatedFields = new HashMap<>();
                         ObservableSnapshotArray<Feature> features = mAdapter.getSnapshots();
+                        // delete the features of the given supplier
                         for (int i = 0; i < features.size(); i++){
                             if (features.get(i).getSupplierName().equals(supplierToDelete)){
                                 updatedFields.put("/" + Constants.PATH_FEATURES +
@@ -203,6 +187,7 @@ public class FeaturesFragment extends Fragment {
                                         "/" + mAdapter.getRef(i).getKey(), null);
                             }
                         }
+                        // Write to database the updates.
                         mRootRef.updateChildren(updatedFields, new DatabaseReference.CompletionListener() {
                             @Override
                             public void onComplete(@Nullable DatabaseError error, @NonNull DatabaseReference ref) {
@@ -223,6 +208,9 @@ public class FeaturesFragment extends Fragment {
 
     }
 
+    /**
+     * Delete all the features in the db. Show the user a dialog first
+     */
     private void deleteAllFeatures() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
         builder.setTitle(R.string.delete_all_features)
@@ -269,6 +257,9 @@ public class FeaturesFragment extends Fragment {
         }
     }
 
+    /**
+     * Show the user the possible ways that he can sort the features list
+     */
     private void showSortOptionsDialog() {
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getActivity());
         builder.setTitle(R.string.action_sort_by)
@@ -334,7 +325,9 @@ public class FeaturesFragment extends Fragment {
         builder.create().show();
     }
 
-
+    /**
+     * Here we are attaching the {@link FirebaseRecyclerAdapter} to the {@link RecyclerView}
+     */
     private void setAdapter() {
         // If the user had previously set a sorting preference
         if (!TextUtils.isEmpty(mQueryOrderByValue)) {
@@ -353,7 +346,8 @@ public class FeaturesFragment extends Fragment {
         mAdapter = new FirebaseRecyclerAdapter<Feature, FeaturesFragment.FeatureViewHolder>(mOptions) {
             @Override
             protected void onBindViewHolder(@NonNull FeaturesFragment.FeatureViewHolder holder, final int position, @NonNull final Feature model) {
-
+                // handle how to populate the views in the list item according to
+                // the data contained in the model.
                 final String featureKey = getRef(position).getKey();
 
                 holder.supplierName.setText(model.getSupplierName());
@@ -409,6 +403,13 @@ public class FeaturesFragment extends Fragment {
         mRecyclerView.setAdapter(mAdapter);
     }
 
+    /**
+     *
+     * @param featureKey the key of the current {@link Feature}
+     * @param model the data of the {@link Feature}
+     * @return a {@link android.view.View.OnClickListener } to handle user clicks on a
+     * {@link PopupMenu} that related to the current {@link Feature}
+     */
     private View.OnClickListener setPopupMenuClickListener(final String featureKey, final Feature model) {
 
         return new View.OnClickListener() {
@@ -418,8 +419,14 @@ public class FeaturesFragment extends Fragment {
                 popupMenu.inflate(R.menu.features_popup_menu);
                 // if gave permission to sms then set visible , else invisible
                 popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    /**
+                     *
+                     * @param item the {@link PopupMenu} item that the user clicked on
+                     * @return tre if the user clicked on an item, false otherwise
+                     */
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
+
                         switch (item.getItemId()) {
 
                             case R.id.action_delete_feature:
@@ -439,7 +446,12 @@ public class FeaturesFragment extends Fragment {
         };
     }
 
+    /**
+     * Call the {@link Feature's } supplier
+     * @param supplierPhone the phone of the {@link Feature's } supplier
+     */
     private void callSupplier(String supplierPhone) {
+        // If there is no phone for this supplier then show a toast
         if (supplierPhone == null || TextUtils.isEmpty(supplierPhone)) {
             Toast.makeText(getContext(), R.string.error_no_supplier_phone, Toast.LENGTH_SHORT).show();
         } else {
@@ -449,6 +461,11 @@ public class FeaturesFragment extends Fragment {
         }
     }
 
+    /**
+     * Delete a given {@link Feature}
+     * @param featureKey the key of the {@link Feature}
+     * @param featureName the name of the {@link Feature}
+     */
     private void deleteFeature(final String featureKey, String featureName) {
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext());
@@ -474,6 +491,10 @@ public class FeaturesFragment extends Fragment {
         }).create().show();
     }
 
+    /**
+     * This class represents an object that holds
+     * the {@link View's} of a {@link Feature} item
+     */
     public static class FeatureViewHolder extends RecyclerView.ViewHolder {
 
         TextView featureName, supplierName, paymentBalance;
@@ -493,18 +514,17 @@ public class FeaturesFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
+       // Stop listen to changes in the features
         if (mAdapter != null)
             mAdapter.startListening();
 
     }
 
 
-
     @Override
     public void onStop() {
         super.onStop();
-
+        //Stop listen to changes in the features
         if (mAdapter != null)
             mAdapter.stopListening();
     }

@@ -3,7 +3,6 @@ package com.example.easywedding;
 
 
 import android.content.Intent;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -64,7 +63,7 @@ import static android.app.Activity.RESULT_OK;
 
 public class ChatFragment extends Fragment {
 
-
+    // guest list fields
     private RecyclerView mRecyclerView;
     private EditText mMessageEditText;
     private Button mSendMessageButton;
@@ -110,7 +109,7 @@ public class ChatFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         Bundle bundle = getArguments();
-
+        // Fetch from the main activity the data id of the current user
         if (bundle != null && bundle.containsKey(Constants.FRAGMENT_DATA_ID_ARG)) {
             mDataId = bundle.getString(Constants.FRAGMENT_DATA_ID_ARG);
         }
@@ -134,13 +133,13 @@ public class ChatFragment extends Fragment {
         mFirebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
-        mChatFileAttachStorageRef = mFirebaseStorage.getReference().child(Constants.PATH_STORAGE_PHOTOS);
+        mChatFileAttachStorageRef = mFirebaseStorage.getReference().child(mDataId);
 
         mAttachFile = mFragmentLayout.findViewById(R.id.chat_attach);
         setFileAttachListener();
-
+        // here we'll set the adapter to the recycler view
         listenToMessagesInChat();
-
+        // handle chat message and message deployment
         handleMessageEditText();
         handleMessageDeploy();
 
@@ -148,6 +147,9 @@ public class ChatFragment extends Fragment {
         return mFragmentLayout;
     }
 
+    /**
+     * Set the Image chooser intent.
+     */
     private void setFileAttachListener() {
         mAttachFile.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -160,7 +162,9 @@ public class ChatFragment extends Fragment {
         });
     }
 
-
+    /**
+     * We stop the listening to the db here
+     */
     @Override
     public void onStart() {
         super.onStart();
@@ -170,19 +174,28 @@ public class ChatFragment extends Fragment {
 
     }
 
-
+    /**
+     * Listen to new messages in the chat
+     */
     private void listenToMessagesInChat() {
         // Get a reference to the user's chat.
         mUserGroupChatReference = mRootRef.child(Constants.PATH_CHATS)
                 .child(mDataId);
-
+        // here we set the chat db reference and give the POJO class for the message
         FirebaseRecyclerOptions<Message> options = new FirebaseRecyclerOptions.Builder<Message>()
                 .setQuery(mUserGroupChatReference, Message.class)
                 .build();
 
         mAdapter = new FirebaseRecyclerAdapter<Message, MessageViewHolder>(options) {
+            /**
+             * // Fetch the list item UI elements value from the model
+             * @param holder holds the list item {@link View's}
+             * @param position the position of the current item
+             * @param model the values that will populated in the holder's {@link View's}
+             */
             @Override
             protected void onBindViewHolder(@NonNull MessageViewHolder holder, int position, @NonNull Message model) {
+                // Fetch the list item UI elements value from the model
 
                 String text = model.getText();
                 // A file, not text
@@ -207,7 +220,9 @@ public class ChatFragment extends Fragment {
                 }
 
                 String currentMessageSenderId = model.getSenderId();
-
+                // Set the color of the message background.
+                // the sender will see his messages in light blue .
+                // the sender will see other messages in white
                 if (currentMessageSenderId != null) {
                     // If this message belong to the sender  the se the sender background
                     if (currentMessageSenderId.equals(mFirebaseUser.getUid())) {
@@ -244,6 +259,12 @@ public class ChatFragment extends Fragment {
 
     }
 
+    /**
+     * set a listener to alick event. When the user click on an image,  a dialog with the full photo that the user clicked on .
+     * @param img the image the user clicked on
+     * @param photoUrl the Url of the image in the cloud storage
+     * @return the listener
+     */
     private View.OnClickListener createPhotoClickListener(ImageView img, final String photoUrl) {
         return new View.OnClickListener() {
             @Override
@@ -261,7 +282,9 @@ public class ChatFragment extends Fragment {
         };
     }
 
-    // scroll to last item.
+    /**
+     * This will scroll to the last item that was inserted
+     */
     private void registerDataObserver() {
 
         mAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -283,6 +306,9 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    /**
+     * Stop listen to chat messages here
+     */
     @Override
     public void onStop() {
         super.onStop();
@@ -293,6 +319,9 @@ public class ChatFragment extends Fragment {
 
     }
 
+    /**
+     * Represents an object that holds the {@link View's} of a specific {@link Message} list item
+     */
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
 
         TextView name, time, text;
@@ -308,7 +337,9 @@ public class ChatFragment extends Fragment {
         }
     }
 
-
+    /**
+     * Handle message deployment, Write the message to the db with the current time
+     */
     private void handleMessageDeploy() {
         // Click on the send button sends a message and clears the EditText
         mSendMessageButton.setOnClickListener(new View.OnClickListener() {
@@ -347,6 +378,10 @@ public class ChatFragment extends Fragment {
         });
     }
 
+    /**
+     * Handle change in text . Enable the send button if the {@link EditText}
+     * is not empty, else disable the button
+     */
     private void handleMessageEditText() {
         mMessageEditText.setEnabled(true);
         mSendMessageButton.setEnabled(false);
@@ -374,15 +409,9 @@ public class ChatFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
+        // If the user pick a photo
         if (requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK){
 
             // The photo will get back here as Uri.
@@ -393,7 +422,7 @@ public class ChatFragment extends Fragment {
                 final StorageReference fileRef = mChatFileAttachStorageRef.child(selectedFileUri.getLastPathSegment());
                 // Send the file to the storage
                 UploadTask uploadTask = fileRef.putFile(selectedFileUri);
-                Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                     @Override
                     public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
                         if (!task.isSuccessful()) {
@@ -406,6 +435,8 @@ public class ChatFragment extends Fragment {
                 }).addOnCompleteListener(new OnCompleteListener<Uri>() {
                     @Override
                     public void onComplete(@NonNull Task<Uri> task) {
+                        // If the task was successful then get the download Uri
+                        // and write the new message to the db
                         if (task.isSuccessful()) {
                             Uri downloadUri = task.getResult();
 

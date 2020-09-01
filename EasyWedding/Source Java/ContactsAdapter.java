@@ -23,6 +23,9 @@ import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
+/**
+ * Adapter we set to {@link RecyclerView} to show the contacts list
+ */
 public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.ContactViewHolder>
 implements Filterable {
 
@@ -46,6 +49,11 @@ implements Filterable {
         return new ContactViewHolder(view);
     }
 
+    /**
+     *
+     * @param holder holds our {@link View's} of the contact list item
+     * @param position the position of the current contact list item
+     */
     @Override
     public void onBindViewHolder(@NonNull ContactsAdapter.ContactViewHolder holder, int position) {
         final Contact contact = mContacts.get(position);
@@ -56,8 +64,6 @@ implements Filterable {
             holder.checkBox.setChecked(false);
 
         holder.name.setText(contact.getName());
-        // TODO if this user check, then update mContacts here to checked (listener)
-        // TODO Then here in view holder,if it checked in mContacts check it here.
 
         String photo = contact.getPhoto();
         if (photo != null)
@@ -82,10 +88,15 @@ implements Filterable {
         return mContacts.size();
     }
 
+    /**
+     *
+     * @return the filtered {@link Contact} list
+     */
     @Override
     public Filter getFilter() {
         return mContactsFilter;
     }
+
     private Filter mContactsFilter = new Filter() {
         // Asynchronous method.
         @Override
@@ -118,14 +129,16 @@ implements Filterable {
         protected void publishResults(CharSequence constraint, FilterResults results) {
             // mContacts is the list the we set the adapter to.
             mContacts.clear();
-            mContacts.addAll((List) results.values);
-            notifyDataSetChanged();
+            if (results.values != null) {
+                mContacts.addAll((List) results.values);
+                notifyDataSetChanged();
+            }
         }
     };
 
     /**
      * This method gets called when
-     * the original contacts list (mContacts) contains the contacts of the user
+     * the original {@link Contact} list contains the contacts of the user
      */
     public void initializeContactsCopyList() {
         mContactsCopy = new ArrayList<>(mContacts);
@@ -146,10 +159,11 @@ implements Filterable {
 
         }
     }
-    public List<Contact> getContactsCopy (){
-        return mContactsCopy;
-    }
 
+    /**
+     *
+     * @return a list of {@link Guest} that was generated from the {@link Contact} list.
+     */
     public List<Guest> getGuestsFromContacts(){
         if (mContactsCopy == null)
             return null;
@@ -157,6 +171,8 @@ implements Filterable {
         List<Guest> guests = new ArrayList<>();
 
         for (Contact contact : mContactsCopy){
+            // Add only contacts that was invited (I should have change this to "selected")
+            // for making the meaning mote clear.
             if (contact.isInvited())
                 guests.add(contact.getGuestInstanceFromContact());
         }

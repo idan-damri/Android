@@ -11,6 +11,7 @@ import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.AsyncQueryHandler;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
@@ -34,6 +35,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,7 +53,6 @@ public class ContactsActivity extends AppCompatActivity {
     private ProgressBar mProgressBar;
 
     private DatabaseReference mRootRef;
-    private FirebaseAuth mAuth;
     private String mDataId;
 
     private ArrayList<String> mPhones;
@@ -63,7 +64,7 @@ public class ContactsActivity extends AppCompatActivity {
     private static final String PHOTO = ContactsContract.CommonDataKinds.Photo.PHOTO_URI;
     private static final String NAME = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME;
     private static final String PHONE_NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
-    private static final String EMAIL = ContactsContract.CommonDataKinds.Email.ADDRESS;
+   //  private static final String EMAIL = ContactsContract.CommonDataKinds.Email.ADDRESS;
 
     public static final String TAG = ContactsActivity.class.getSimpleName();
 
@@ -74,9 +75,7 @@ public class ContactsActivity extends AppCompatActivity {
             PHONE_NUMBER
     };
 
-    private static final String[] EMAIL_PROJECTION = new String[]{EMAIL};
-
-    private static final String SORT_ORDER = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC";
+    // private static final String[] EMAIL_PROJECTION = new String[]{EMAIL};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,13 +89,12 @@ public class ContactsActivity extends AppCompatActivity {
         mProgressBar = findViewById(R.id.contacts_progress_bar);
 
         mRootRef = FirebaseDatabase.getInstance().getReference();
-        mAuth = FirebaseAuth.getInstance();
 
         Intent intent = getIntent();
-
+        // user's db data id
         if (intent.hasExtra(Constants.FRAGMENT_DATA_ID_ARG))
             mDataId = intent.getStringExtra(Constants.FRAGMENT_DATA_ID_ARG);
-
+        // guests phones
         if (intent.hasExtra(Constants.EXTRA_PHONE_LIST))
             mPhones = intent.getStringArrayListExtra(Constants.EXTRA_PHONE_LIST);
 
@@ -115,12 +113,11 @@ public class ContactsActivity extends AppCompatActivity {
 
     }
 
-    private void getContacts() {
-        boolean isLayoutDirectionRTL =  false;
-        // We need to know this for later. Change the phone number string pattern.
-        // In Israel, replace "...972..." variations with "".
-        if (getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL)
-            isLayoutDirectionRTL = true;
+    /**
+     * Fetch the user's contacts using the Contacts {@link android.content.ContentProvider}
+     */
+    public void getContacts() {
+
 
         ContentResolver contentResolver = getContentResolver();
         Cursor cursor = contentResolver.query(
@@ -130,13 +127,19 @@ public class ContactsActivity extends AppCompatActivity {
                 null,
                 null);
 
+        boolean isLayoutDirectionRTL =  false;
+        // We need to know this for later. Change the phone number string pattern.
+        // In Israel, replace "...972..." variations with "".
+        if (getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL)
+            isLayoutDirectionRTL = true;
+
         if (cursor != null && 0 < cursor.getCount()) {
             while (cursor.moveToNext()) {
                 String uid = cursor.getString(cursor.getColumnIndex(ID));
                 String name = cursor.getString(cursor.getColumnIndex(NAME));
                 String phoneNumber = cursor.getString(cursor.getColumnIndex(PHONE_NUMBER));
                 String photoUri = cursor.getString(cursor.getColumnIndex(PHOTO));
-                String email = "";
+               // String email = "";
 
                 if (isLayoutDirectionRTL) {
                     phoneNumber = phoneNumber.replaceAll(PROHIBITED_PHONE_CHARACTERS, "");
@@ -146,21 +149,6 @@ public class ContactsActivity extends AppCompatActivity {
 
 
                 }
-
-       /*
-                Cursor emailCursor = contentResolver.query(
-                        ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                        EMAIL_PROJECTION,
-                        ID + " = ?",
-                        new String[]{uid},
-                        null);
-
-                if (emailCursor != null && 0 < emailCursor.getCount()
-                        && emailCursor.moveToNext()) {
-                    email = emailCursor.getString(0);
-                    emailCursor.close();
-                }
-        */
 
                 mContactHashSet.add(new Contact(name, phoneNumber, photoUri, false, uid));
 
@@ -182,7 +170,7 @@ public class ContactsActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.contacts_menu, menu);
-
+        // Handle the contacts search in the action bar of contacts activity
         SearchView searchView = (SearchView) menu.findItem(R.id.action_search_contact).getActionView();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -190,6 +178,11 @@ public class ContactsActivity extends AppCompatActivity {
                 return false;
             }
 
+            /**
+             *
+             * @param newText the text the user write in the {@link SearchView}
+             * @return false always
+             */
             @Override
             public boolean onQueryTextChange(String newText) {
                 mAdapter.getFilter().filter(newText);
@@ -205,16 +198,33 @@ public class ContactsActivity extends AppCompatActivity {
             case R.id.action_save_contacts:
                 writeGuestsToDatabase();
                 return true;
-
+            // when the user is getting back from this activity to
+            // AddContactActivity via the up button then
+            // we want to keep the mDataId and mPhones fields filled with
+            // the current data
+            case android.R.id.home:
+                Intent intent = new Intent();
+                intent.putStringArrayListExtra(Constants.EXTRA_PHONE_LIST, mPhones);
+                intent.putExtra(Constants.FRAGMENT_DATA_ID_ARG, mDataId);
+                setResult(RESULT_OK, intent);
+                finish();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
     /**
-     * write to te db the contacts that the user wants to invite
+     * write to the db the contacts that the user wants to invite
      */
     private void writeGuestsToDatabase() {
+        // If there was an error with shared preference
+        // then return
+        if (mDataId == null) {
+            Toast.makeText(this, R.string.error_generic_msg, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         DatabaseReference userGuestsRef = mRootRef.child(Constants.PATH_GUESTS).child(mDataId);
         // Get all the checked contacts and for each contact make a corresponding guest object
         // return the result as a list of guests.

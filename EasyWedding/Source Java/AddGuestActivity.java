@@ -41,24 +41,35 @@ import java.util.Map;
 import java.util.Objects;
 
 public class AddGuestActivity extends AppCompatActivity {
-
+    // Max joiners for a guest
     private static final int MAX_JOINERS = 10;
-    private static final int CONTACTS_ACTIVITY_REQUEST_CODE = 1;
+    // REQUEST CODE to the intent that connect us from this activity to
+    // the contacts activity
+    private static final int RC_FROM_ADD_GUEST_TO_CONTACTS = 1;
+    // the state of the input fields
+    // if we in edit mode (edit existing guest) then use this state
+    // to figure what fields are needed to update in the db
     private static final int STATE_SIZE = 5;
+    //layouts
     private TextInputLayout mLayoutName;
     private TextInputLayout mLayoutPhone;
     private TextInputLayout mLayoutEmail;
     private TextInputLayout mLayoutPriority;
+    // guests phones
     private ArrayList<String> mPhones;
+    // form fields
     private CheckBox mArrivingCheckBox;
     private TextInputLayout mLayoutJoiners;
+
     private LinearLayout mDummyLayout;
+
     private MaterialButton mAddFromContactsButton;
+    // for the priority
     private ArrayAdapter<String> mDropdownMenuAdapter;
 
     private Intent mIntent;
     private boolean initialArrivingState;
-
+    // see explanation above
     private boolean[] changeInState;
     private static final int NAME = 0;
     private static final int PHONE = 1;
@@ -70,7 +81,7 @@ public class AddGuestActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private String mDataId;
 
-
+    // Map priority from string value to int value
     private static final Map<String, Integer> priorityMap = new HashMap<>();
 
     // Identifier for the permission request
@@ -109,17 +120,18 @@ public class AddGuestActivity extends AppCompatActivity {
         ActionBar ab = getSupportActionBar();
         if (ab != null)
             ab.setDisplayHomeAsUpEnabled(true);
-
+        // This is  the action we will take if the user start the contacts activity
         mAddFromContactsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(AddGuestActivity.this, ContactsActivity.class);
-                intent.putExtra(Constants.FRAGMENT_DATA_ID_ARG, mDataId);
 
+                intent.putExtra(Constants.FRAGMENT_DATA_ID_ARG, mDataId);
+                // pass to the contacts activity the phones of the guests
                 if (mPhones != null)
                     intent.putStringArrayListExtra(Constants.EXTRA_PHONE_LIST, mPhones);
 
-                startActivityForResult(intent, CONTACTS_ACTIVITY_REQUEST_CODE);
+                startActivityForResult(intent, RC_FROM_ADD_GUEST_TO_CONTACTS);
             }
         });
 
@@ -174,17 +186,38 @@ public class AddGuestActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         // If the user got back here from contacts activity after he saved contacts
         // then we want the user to get to the guests fragment.
-        if (requestCode == CONTACTS_ACTIVITY_REQUEST_CODE && resultCode == RESULT_OK) {
-            onBackPressed();
+        if (requestCode == RC_FROM_ADD_GUEST_TO_CONTACTS && resultCode == RESULT_OK) {
+           // This condition will be true if the user saved guest via
+            // the contacts activity. In this case we'll want to
+            // return to the main activity exactly to the GuestFragment.
+            if (data == null) {
+                onBackPressed();
+            }
+            // Else the user pressed on the home button in the ContactsActivity
+            // so restore the data needed for this activity.
+            else{
+                if (data.hasExtra(Constants.FRAGMENT_DATA_ID_ARG))
+                    mDataId =  data.getStringExtra(Constants.FRAGMENT_DATA_ID_ARG);
+
+                if (data.hasExtra(Constants.EXTRA_PHONE_LIST))
+                    mPhones = data.getStringArrayListExtra(Constants.EXTRA_PHONE_LIST);
+            }
         }
+
     }
 
+    /**
+     * Set the mapping from string priority values to int priority values
+     */
     private void setPriorityMap() {
         String[] priorities = getResources().getStringArray(R.array.guest_dropdown_menu_values);
         for (int i = 0; i < priorities.length; i++)
             priorityMap.put(priorities[i], i);
     }
 
+    /**
+     * Handle locale sensitive input fields
+     */
     private void handleRTLLayout() {
         if (getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
 
@@ -195,6 +228,9 @@ public class AddGuestActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Listen to change in text in the text input fields
+     */
     private void setTextWatchers() {
         mLayoutJoiners.getEditText().addTextChangedListener(new CustomTextWatcher(mLayoutJoiners, changeInState, JOINERS));
         mLayoutName.getEditText().addTextChangedListener(new CustomTextWatcher(mLayoutName, changeInState, NAME));
@@ -205,6 +241,9 @@ public class AddGuestActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Set the end icons "clear text" to invisible when the user first start this activity
+     */
     private void setEndIconsInvisibleOnStartup() {
         mLayoutJoiners.setEndIconVisible(false);
         mLayoutPhone.setEndIconVisible(false);
@@ -213,6 +252,9 @@ public class AddGuestActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Initialize this activity attributes
+     */
     private void setFields() {
         mLayoutEmail = findViewById(R.id.text_layout_guest_email);
         mLayoutName = findViewById(R.id.layout_guest_name);
@@ -222,7 +264,7 @@ public class AddGuestActivity extends AppCompatActivity {
         mLayoutJoiners = findViewById(R.id.layout_guest_joiners);
         mIntent = getIntent();
 
-        if (mIntent.hasExtra(Constants.FRAGMENT_DATA_ID_ARG))
+       if (mIntent.hasExtra(Constants.FRAGMENT_DATA_ID_ARG))
             mDataId = mIntent.getStringExtra(Constants.FRAGMENT_DATA_ID_ARG);
 
         if (mIntent.hasExtra(Constants.EXTRA_PHONE_LIST))
@@ -256,7 +298,7 @@ public class AddGuestActivity extends AppCompatActivity {
             case R.id.action_save_one_guest:
 
                 mDummyLayout.requestFocus();
-
+                // Id the form fields are valid then write to the db
                 if (isDataValid()) {
 
                     Utils.hideKeyboardInActivity(this);
@@ -283,22 +325,27 @@ public class AddGuestActivity extends AppCompatActivity {
         mDummyLayout.requestFocus();
     }
 
+    /**
+     * Validate the input fields data
+     * @return true if the input fields of the guest form are valid, false otherwise.
+     */
     private boolean isDataValid() {
         String phone =  mLayoutPhone.getEditText().getText().toString().trim().replaceAll("-", "");
-
+        // If the current guest already in the user guests then return false
         if (Utils.isDuplicateGuest(phone, mPhones)) {
             Toast.makeText(this, R.string.dup_guest, Toast.LENGTH_SHORT).show();
             return false;
         }
 
         String errorMessage = getString(R.string.error_required_field_empty);
-
+        // email validation
         if (!TextUtils.isEmpty(mLayoutEmail.getEditText().getText()) &&
                 !Utils.isValidEmail(mLayoutEmail.getEditText().getText())) {
             mLayoutEmail.setError(getString(R.string.error_chat_email_input));
             mLayoutEmail.requestFocus();
             return false;
         }
+        // joiners validation
         if (!TextUtils.isEmpty(mLayoutJoiners.getEditText().getText())) {
             try {
                 int joiners = Integer.parseInt(mLayoutJoiners.getEditText().getText().toString());
@@ -312,14 +359,19 @@ public class AddGuestActivity extends AppCompatActivity {
                 return false;
             }
         }
-
+        // name and phone validation
         return Utils.isValidRequiredField(mLayoutName, errorMessage)
                 && Utils.isValidRequiredField(mLayoutPhone, errorMessage);
 
     }
 
 
-
+    /**
+     * write the guest to the db.
+     * @param isExistingGuest true if the guest is an existing guest
+     *                        and the user update this guest, false if this
+     *                        guest is a new guest.
+     */
     private void updateDatabase(boolean isExistingGuest) {
         String name = mLayoutName.getEditText().getText().toString().trim();
         String phone = mLayoutPhone.getEditText().getText().toString();
@@ -354,6 +406,15 @@ public class AddGuestActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * update existing guest fields
+     * @param name guest name
+     * @param phone guest phone
+     * @param email guest email
+     * @param priority guest priority
+     * @param joiners guest joiners
+     * @param isArriving true if the guest arrive to the wedding, false otherwise
+     */
     private void updateExistingGuest(String name, String phone, String email, Integer priority, String joiners, Boolean isArriving) {
         String guestKey = mIntent.getStringExtra(GuestsFragment.EXTRA_GUEST_KEY);
 
@@ -363,6 +424,7 @@ public class AddGuestActivity extends AppCompatActivity {
                 .child(guestKey);
 
         Map<String, Object> updatedFields = new HashMap<>();
+        // update only fields that was changed (indicated by changeInState boolean array)
         for (int i = 0; i < STATE_SIZE; i++) {
             if (changeInState[i]) {
                 switch (i) {
@@ -384,6 +446,7 @@ public class AddGuestActivity extends AppCompatActivity {
                 }
             }
         }
+        // If the state of the arrival checkbox changed then update this value in the db
         if (initialArrivingState != isArriving)
             updatedFields.put("/" + Constants.PATH_GUEST_ARRIVE, isArriving);
 

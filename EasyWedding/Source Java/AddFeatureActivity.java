@@ -37,7 +37,7 @@ import java.util.Locale;
 
 
 public class AddFeatureActivity extends AppCompatActivity {
-
+    // edit text layouts
     private TextInputLayout mLayoutFeatureName;
     private TextInputLayout mLayoutPaymentBalance;
     private TextInputLayout mLayoutAdvancePayment;
@@ -46,7 +46,7 @@ public class AddFeatureActivity extends AppCompatActivity {
     private TextInputLayout mLayoutSupplierPhone;
     private TextInputLayout mLayoutQuantity;
     private TextInputLayout mLayoutFreeText;
-
+    // edit texts
     private EditText mSupplierNameEditText;
     private EditText mSupplierPhoneEditText;
     private EditText mSupplierEmailEditText;
@@ -58,7 +58,9 @@ public class AddFeatureActivity extends AppCompatActivity {
     // For the currency of the advance payment and payment balance
     private Locale mLocal;
     private String mCurrencySymbol;
+
     private Intent mIntent;
+
     // For handling focus and soft keyboard events
     // when we start finish the activity.
     private LinearLayout mDummyLayout;
@@ -103,6 +105,10 @@ public class AddFeatureActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Set the end icons "clear text" to invisible when the user first
+     * enter to this activity.
+     */
     private void setEndIconsInvisibleOnStartup() {
         mLayoutPaymentBalance.setEndIconVisible(false);
         mLayoutAdvancePayment.setEndIconVisible(false);
@@ -138,7 +144,9 @@ public class AddFeatureActivity extends AppCompatActivity {
 
     }
 
-
+    /**
+     * listen to changes in the text of these {@link EditText}
+     */
     private void setTextWatchers() {
         mFeatureNameEditText.addTextChangedListener(new CustomTextWatcher(mLayoutFeatureName));
         mSupplierEmailEditText.addTextChangedListener(new CustomTextWatcher(mLayoutSupplierEmail));
@@ -147,7 +155,10 @@ public class AddFeatureActivity extends AppCompatActivity {
         mAdvancePaymentEditText.addTextChangedListener(new NumberTextWatcher(mAdvancePaymentEditText));
     }
 
-
+    /**
+     * When the user first enter to this activity, this dummy view will
+     * take the focus from the {@link EditText} fields
+     */
     private void takeFocusFromInputFields() {
         mDummyLayout.setFocusable(true);
         mDummyLayout.setFocusableInTouchMode(true);
@@ -156,7 +167,7 @@ public class AddFeatureActivity extends AppCompatActivity {
 
     /**
      * handle the case where the user's layout is RTL
-     * and there exists input fields that force the user must write from left to right.
+     * and there exists input fields that force the user write from left to right.
      * For example, phone number and email input field.
      *
      */
@@ -182,7 +193,9 @@ public class AddFeatureActivity extends AppCompatActivity {
 
     }
 
-
+    /**
+     * Initialize this activity attributes
+     */
     private void setFields() {
         mLayoutFeatureName = findViewById(R.id.text_layout_feature_name);
         mLayoutSupplierName = findViewById(R.id.text_layout_supplier_name);
@@ -215,12 +228,22 @@ public class AddFeatureActivity extends AppCompatActivity {
             mDataId = mIntent.getStringExtra(Constants.FRAGMENT_DATA_ID_ARG);
     }
 
+    /**
+     *
+     * @param menu the menu of this activity
+     * @return true indicates that this method succeeds inflating the menu
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.features_activity_menu, menu);
         return true;
     }
 
+    /**
+     *
+     * @param item the current menu item that the user clicked on
+     * @return true if the behavior was as expected
+     */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
@@ -234,11 +257,11 @@ public class AddFeatureActivity extends AppCompatActivity {
                     Utils.hideKeyboardInActivity(this);
 
                     mDummyLayout.requestFocus();
-
+                    // This will write to the db
                     updateDatabase(mIntent.hasExtra(FeaturesFragment.EXTRA_FEATURE_KEY));
 
                     Toast.makeText(this, R.string.success_feature_saved, Toast.LENGTH_SHORT).show();
-
+                    // Go back to the last fragment (on the back stack))
                     onBackPressed();
                 }
 
@@ -249,6 +272,10 @@ public class AddFeatureActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Write the feature to the db
+     * @param isEditExistingFeature true if the user edit an existing feature, false otherwise
+     */
     private void updateDatabase(boolean isEditExistingFeature) {
         String featureName = mFeatureNameEditText.getText().toString();
         String paymentBalance = mPaymentBalanceEditText.getText().toString();
@@ -260,8 +287,10 @@ public class AddFeatureActivity extends AppCompatActivity {
         String supplierPhone = mSupplierPhoneEditText.getText().toString();
 
         // Concat the local currency symbol with the payments
-        if (!TextUtils.isEmpty(paymentBalance))
+        if (!TextUtils.isEmpty(paymentBalance) && !paymentBalance.equals("0"))
             paymentBalance = mCurrencySymbol + paymentBalance;
+        else
+            paymentBalance = "";
 
         if (!TextUtils.isEmpty(advancePayment))
             advancePayment = mCurrencySymbol + advancePayment;
@@ -279,13 +308,18 @@ public class AddFeatureActivity extends AppCompatActivity {
 
         String key;
 
-
-        if (isEditExistingFeature)
+        // If we in edit mode then we will fetch the key of the current user
+        // override the existing values of this feature in the db
+        if (isEditExistingFeature) {
             key = mIntent.getStringExtra(FeaturesFragment.EXTRA_FEATURE_KEY);
-        else
+            // Else this is a new feature so "push" a new key to the db and use this
+            // as the new feature's key
+        }
+        else {
             key = mRootRef.child(Constants.PATH_FEATURES)
                     .child(mDataId)
                     .push().getKey();
+        }
         // Write the new feature record to the db
         mRootRef.child(Constants.PATH_FEATURES)
                 .child(mDataId)
@@ -294,6 +328,10 @@ public class AddFeatureActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Data validation to the feature form
+     * @return true if the data is valid , false otherwise
+     */
     private boolean isDataValid() {
         String featureName = mFeatureNameEditText.getText().toString();
         String supplierEmail = mSupplierEmailEditText.getText().toString();
@@ -335,26 +373,11 @@ public class AddFeatureActivity extends AppCompatActivity {
 
 
     /**
-     * @param stringDecimal the string to format
-     * @return formatted string
+     * Format payment fields, adding thousands separators and performing other
+     * validations
+     *
      */
-    private String parseStringDecimal(String stringDecimal) {
-        try {
-            if (!TextUtils.isEmpty(stringDecimal))
-                stringDecimal = String.format(mLocal, "%1$,.2f", BigDecimal.valueOf(Double.parseDouble(stringDecimal)));
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
-        }
 
-        return stringDecimal;
-    }
-
-
-
-
-    /**
-     * Format the user's input, adding thousands separators
-     */
     private class NumberTextWatcher implements TextWatcher {
 
         private DecimalFormat df;
@@ -362,7 +385,7 @@ public class AddFeatureActivity extends AppCompatActivity {
         private boolean hasFractionalPart;
 
         private EditText et;
-
+        // Format pattern
         public NumberTextWatcher(EditText et) {
             df = new DecimalFormat("#,###.##");
             df.setDecimalSeparatorAlwaysShown(true);
