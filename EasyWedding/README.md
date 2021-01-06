@@ -1,5 +1,6 @@
 # EasyWedding
 This app is the final project I chose to implement as a Computer Science student.
+
 EasyWedding is an Android app that helps couples who are getting married to organize their wedding.
 
 ***Build is in progress.***
